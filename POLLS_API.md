@@ -4,7 +4,7 @@ Base URL: `{API_BASE_URI}` (configured via environment).
 
 All endpoints expect/return `application/json`. Routes are reachable both with and without the `/api` prefix unless explicitly noted.
 
-This document covers the **public, reader-facing** poll endpoints consumed by the `/polls` page in `scoreboard-app`. CRUD/admin endpoints (`POST /polls`, `PUT /polls/:id`, `DELETE /polls/:id`) live in the main `API_SPEC.md` and are unchanged.
+This document covers the full Polls surface — both the **public, reader-facing** endpoints consumed by the `/polls` page in `scoreboard-app` and the **admin CRUD** endpoints used to author and manage polls. The public endpoints are documented first because they carry the bulk of the behavioral contract (lifecycle, voter identity, dedupe, CORS); the admin CRUD section near the bottom is intentionally lean.
 
 ---
 
@@ -164,6 +164,56 @@ The increment + dedupe-record MUST happen in a single transaction (or via a uniq
 #### Rate limiting
 
 Per-IP rate limit of ~30 vote attempts/minute is recommended to slow brute-force tampering. Returns `429 Too Many Requests` with a `Retry-After` header when tripped.
+
+---
+
+## Admin CRUD
+
+These endpoints are used by the admin UI to author and manage polls. They are **not** protected in code today, matching the rest of the resource spec, but they SHOULD be locked behind `x-access-token` in production.
+
+The admin works in terms of plain option strings — the backend is responsible for assigning each option a stable `id` when the poll is created (and on `PUT` for any newly-added options) and exposing the `{id, text, votes}` shape on the read endpoints documented above.
+
+### `POST /polls`
+
+Create a new poll. Defaults `status` to `DRAFT` so the poll is invisible on `/polls` until the admin explicitly flips it to `ACTIVE`.
+
+```jsonc
+Request:
+{
+  "question":  "string",                              // required
+  "options":   ["string", "string", ...],             // required, min 2 items — plain text strings; backend assigns option ids
+  "status":    "DRAFT | ACTIVE | CLOSED",             // required, default DRAFT
+  "startDate": "ISO8601?",
+  "endDate":   "ISO8601?"
+}
+
+Response 201: Poll   // full Poll shape with options[].id assigned; totalVotes = 0; hasVoted = false; votedOptionId = null
+```
+
+### `PUT /polls/:id`
+
+Replace a poll. Same request shape as `POST` — the client always sends the complete state.
+
+For options, the request stays as a flat `["string", ...]` array. The backend SHOULD:
+- preserve existing `options[].id` and `votes` for option strings that match (case-insensitively) an option already on the poll,
+- assign a fresh `id` (with `votes = 0`) to any newly-introduced option string,
+- drop options that no longer appear in the request (this destroys any votes on them — admins should treat option edits as destructive).
+
+If the editor needs vote-preserving option edits, that is a v2 concern; the v1 contract is "send the new desired list of option strings".
+
+```jsonc
+Response 200: Poll
+Response 404: { "error": "Poll not found" }
+```
+
+### `DELETE /polls/:id`
+
+```jsonc
+Response 204
+Response 404: { "error": "Poll not found" }
+```
+
+Deleting a poll also discards all of its votes and dedupe records.
 
 ---
 
