@@ -18,6 +18,10 @@ Every article is identified by a URL-friendly `slug` (not a numeric id). The bac
 
 `NEWS | MATCH_REPORT | FEATURE | INTERVIEW | OPINION`
 
+### `sport`
+
+`CRICKET | RUGBY | SOCCER | BADMINTON | BOWLING | MOTOR_SPORTS | BASKETBALL | NETBALL | VOLLEYBALL | CYCLING`
+
 ### `status`
 
 | Status      | Visible publicly? | Notes                                   |
@@ -46,6 +50,7 @@ Every article is identified by a URL-friendly `slug` (not a numeric id). The bac
   "author":     "string",
   "content":    "string (html)",
   "category":   "NEWS | MATCH_REPORT | FEATURE | INTERVIEW | OPINION",
+  "sport":      "CRICKET | RUGBY | SOCCER | BADMINTON | BOWLING | MOTOR_SPORTS | BASKETBALL | NETBALL | VOLLEYBALL | CYCLING",
   "status":     "PUBLISHED | DRAFT | ARCHIVED",
   "summary":    "string | null",
   "imageUrl":   "string | null",        // URL returned from /articles/upload (CDN / public URL)
@@ -80,6 +85,7 @@ Request:
   "author":   "string",                                                          // required
   "content":  "string (html)",                                                   // required
   "category": "NEWS | MATCH_REPORT | FEATURE | INTERVIEW | OPINION",             // required
+  "sport":    "CRICKET | RUGBY | SOCCER | BADMINTON | BOWLING | MOTOR_SPORTS | BASKETBALL | NETBALL | VOLLEYBALL | CYCLING", // required
   "status":   "PUBLISHED | DRAFT | ARCHIVED",                                    // required, default DRAFT
   "summary":  "string?",
   "imageUrl": "string?"                                                          // set this to the `url` returned by /articles/upload
