@@ -73,6 +73,23 @@ Every article is identified by a URL-friendly `slug` (not a numeric id). The bac
 Response 200: Article[]
 ```
 
+### `GET /articles/popular`
+
+Returns the "popular" article feed for the public site. We don't have view / engagement data yet, so the backend MUST currently implement this as **the most recently created `PUBLISHED` articles, newest first** (i.e. order by `createdAt DESC`). When real popularity signals exist this endpoint's ranking will change; the request/response shape will not.
+
+Query parameters:
+
+| Name    | Type    | Required | Default | Notes                                          |
+|---------|---------|----------|---------|------------------------------------------------|
+| `limit` | integer | no       | `10`    | Number of articles to return. Must be `1..128`. Values `> 128` MUST be clamped to `128`; values `< 1` or non-integer MUST return `400`. |
+
+`DRAFT` and `ARCHIVED` articles MUST be excluded.
+
+```jsonc
+Response 200: Article[]               // length <= limit, ordered newest first
+Response 400: { "error": "Invalid limit" }
+```
+
 ### `GET /articles/:slug`
 
 ```jsonc
