@@ -26,6 +26,8 @@ Every article is identified by a URL-friendly `slug` (not a numeric id). The bac
 | `PUBLISHED` | yes               | Listed and fetchable by readers.        |
 | `ARCHIVED`  | no                | Removed from public lists but retained. |
 
+`DRAFT` and `ARCHIVED` articles MUST be excluded from any public-facing list. They remain reachable by `slug` for admin preview.
+
 ### Authentication
 
 - CRUD routes (`GET / POST / PUT / DELETE`) are **not** protected in code today, matching the rest of the resource spec.
