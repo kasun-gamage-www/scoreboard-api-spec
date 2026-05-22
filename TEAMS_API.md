@@ -60,7 +60,10 @@ Renaming a `Team` therefore does NOT cascade into existing matches or players. I
 
 ### `GET /teams`
 
-```jsonc
+```
+Query params:
+  search?: string   // case-insensitive filter on `name` (substring match)
+
 Response 200: Team[]
 ```
 
