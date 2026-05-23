@@ -37,6 +37,10 @@ The `details` object carries sport-specific scoring fields. Each sport uses a di
 - **Preserve unknown keys verbatim** on every write. The cricket editor, for example, only patches cricket keys and echoes everything else back — football / rugby / etc. keys that may already be on the document MUST NOT be dropped.
 - Treat `PUT` as a **full replacement** of the document the client sends, NOT a deep merge. The client always sends the complete state it wants persisted.
 
+### Cricket format inherited from tournament
+
+On `POST /matches` and `PUT /matches/:slug`, if the request has a non-null `tournamentSlug` and `details.cricketFormat` is missing or `null`, the backend MUST copy the linked tournament's `cricketFormat` onto the stored match. The inherited value is persisted on the match document — subsequent reads are self-contained and do not re-resolve against the tournament. A non-null `details.cricketFormat` in the request always wins over the tournament value. See [`TOURNAMENTS_API.md`](./TOURNAMENTS_API.md) → Cricket format inheritance.
+
 ### Featured flag (at-most-one invariant)
 
 Every `Match` carries `featured: boolean`. The invariant the backend MUST enforce is: **at most one match has `featured: true` at any time across the whole table**.
@@ -96,6 +100,7 @@ All keys are optional. Different sports use disjoint subsets; keys from sports o
   // ---- Cricket ----
   // Innings format: runs (≥0), wickets (0..10), overs (X.Y with Y in 0..5 — 4.6 is illegal, balls roll over to 5.0).
   // `cricketFormat` discriminates the game length: T20 and OD use Inn1 only per side; TEST may use both.
+  // When the match has a `tournamentSlug`, a missing/null `cricketFormat` is inherited from the tournament on write.
   // Cricket editor details: see CRICKET_API.md §2.
   "cricketFormat":    "T20 | OD | TEST | null",
   "homeInn1Runs":     "number?", "homeInn1Wickets": "number?", "homeInn1Overs": "number?",

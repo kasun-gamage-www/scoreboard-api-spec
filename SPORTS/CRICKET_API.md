@@ -558,7 +558,7 @@ The response is the same shape, plus server-managed fields the editor reads back
 |---|---|
 | `sport` | Must equal `"CRICKET"` for this editor. Reject other values with `400`. |
 | `status` | One of `SCHEDULED \| LIVE \| COMPLETED \| CANCELLED \| POSTPONED`. The editor will send `LIVE` automatically on every over-by-over save. |
-| `details.cricketFormat` | One of `T20 \| OD \| TEST` or `null`. Discriminates game length: `T20` and `OD` are single-innings-per-side, `TEST` allows two innings per side. Informational only — the backend MUST NOT reject Inn2 fields when the format is `T20`/`OD`, since admins may switch format on an in-progress match. |
+| `details.cricketFormat` | One of `T20 \| OD \| TEST` or `null`. Discriminates game length: `T20` and `OD` are single-innings-per-side, `TEST` allows two innings per side. Informational only — the backend MUST NOT reject Inn2 fields when the format is `T20`/`OD`, since admins may switch format on an in-progress match. When the match has a `tournamentSlug` and this field is missing/null on write, the backend MUST inherit it from the linked tournament's `cricketFormat` (see [`TOURNAMENTS_API.md`](../TOURNAMENTS_API.md) → Cricket format inheritance). |
 | `details.*Runs` | Integer `≥ 0` or `null`. No upper bound. |
 | `details.*Wickets` | Integer in `[0, 10]` or `null`. |
 | `details.*Overs` | Decimal `X.Y` where `X ≥ 0` and `Y ∈ {0,1,2,3,4,5}`. Examples: `0`, `4`, `4.3`, `19.5`. **`4.6` is invalid** — six legal balls roll the over to `5.0`. Store as a number (the client sends `parseFloat("X.Y")`). |
