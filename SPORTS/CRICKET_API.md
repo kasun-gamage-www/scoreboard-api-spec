@@ -42,6 +42,7 @@ The frontend caches `past-featured` and per-slug match detail with `shareReplay(
 - **Unknowns**: prefer omitting the field or returning `null` over the `-256` sentinel that appears in legacy mocks.
 - **Empty strings**: `videoEmbedUrl`, `imageUrl`, and `result` may be empty strings when not yet known; the frontend treats them the same as missing.
 - **`sport`**: cricket endpoints always return `"CRICKET"`, but the field is required on summary / featured shapes so a future cross-sport endpoint can reuse the same payload. Recognised values (case-insensitive on the client): `"CRICKET"`, `"SOCCER"`, `"RUGBY"`, `"BASKETBALL"`, `"VOLLEYBALL"`, `"NETBALL"`, `"BADMINTON"`, `"BOWLING"`, `"CYCLING"`, `"MOTOR-SPORTS"`. Unknown values fall back to a generic icon.
+- **`cricketFormat`**: optional discriminator on every cricket payload (summary, featured, detail). Recognised values: `"T20"` (20 overs/side, single innings), `"OD"` (50 overs/side, single innings — sometimes called ODI), `"T10"` (10 overs/side, single innings), `"TEST"` (multi-day, up to two innings per side, may declare), `"HUNDRED"` (100 balls/side, single innings — progress measured in balls not overs). When omitted the frontend treats the match as a generic limited-overs format and renders the score string verbatim.
 
 ---
 
@@ -108,30 +109,39 @@ Response 200: FeaturedMatchSummary[]
 ```jsonc
 // FeaturedMatchSummary
 {
-  "embedSlug":  "sl-united-cc-vs-sri-lankan-cc",
-  "slug":       "sl-united-vs-sri-lankan-cc",    // canonical slug for match detail
-  "sport":      "CRICKET",                       // sport code; drives the sport icon on the home carousel & ticker
-  "tournament": "SLCL Season VII",
-  "homeTeam":   "SL United",
-  "awayTeam":   "Sri Lankan CC",
-  "startTime":  "2024-10-06T17:15:00+04:00",
-  "group":      "C",
-  "venue":      "Seven District Oval 1",
+  "embedSlug":     "sl-united-cc-vs-sri-lankan-cc",
+  "slug":          "sl-united-vs-sri-lankan-cc",     // canonical slug for match detail
+  "sport":         "CRICKET",                        // sport code; drives the sport icon on the home carousel & ticker
+  "cricketFormat": "T20",                            // optional: T20 | OD | T10 | TEST | HUNDRED — drives score formatting
+  "tournament":    "SLCL Season VII",
+  "homeTeam":      "SL United",
+  "awayTeam":      "Sri Lankan CC",
+  "startTime":     "2024-10-06T17:15:00+04:00",
+  "group":         "C",
+  "venue":         "Seven District Oval 1",
   "derived": {
-    "wonBy":   "by 2 runs",                      // human-readable result
-    "comment": "All Out"                         // e.g. "10 balls remaining"
+    "resultKind": "WIN",                             // WIN | DRAW | TIE | NO_RESULT (default "WIN" when omitted and a winner is set)
+    "wonBy":      "by 2 runs",                       // human-readable margin; omit / empty when resultKind != WIN
+    "label":      "SL UNITED WON BY 2 RUNS",         // optional pre-formatted result line; takes precedence over winner+wonBy
+    "comment":    "All Out"                          // e.g. "10 balls remaining"
   },
   "scoreboard": {
-    "winner": "SL United",                       // team name; empty string if tied/no result
+    "winner": "SL United",                           // team name; empty string when resultKind != WIN
     "homeTeam": {
       "batFirst":     true,
-      "final":        184,                       // runs
-      "finalWick":    7,                         // wickets
-      "finalOver":    20,                        // completed overs
-      "finalOverBall":0,                         // balls in the current over (0-5)
+      "final":        184,                           // runs (1st innings)
+      "finalWick":    7,                             // wickets (1st innings, 0..10)
+      "finalOver":    20,                            // completed overs (1st innings)
+      "finalOverBall":0,                             // balls in the current over (0-5)
+      "inn1Declared": false,                         // optional, TEST only
+      "inn2Final":    null,                          // optional, TEST only — 2nd innings runs (omit for limited-overs)
+      "inn2Wick":     null,
+      "inn2Over":     null,
+      "inn2OverBall": null,
+      "inn2Declared": false,
       "batting": [
         {
-          "order": 1,                            // batting order; -256 means "unknown"
+          "order": 1,                                // batting order; -256 means "unknown"
           "name":  "Mohamed Suraij",
           "runs":  63,
           "out":   { "out": true }
@@ -154,7 +164,10 @@ Response 200: FeaturedMatchSummary[]
 ```
 
 Field semantics:
-- `final / finalWick / finalOver / finalOverBall` — the final innings score in cricket "runs / wickets in overs.balls" format.
+- `cricketFormat` — when present, the frontend formats `final/finalWick/finalOver/finalOverBall` using the format's conventions. For `HUNDRED`, the progress is rendered as balls (`120/4 (87b)`); for everything else it's `X.Y` overs notation. When omitted, defaults to overs notation.
+- `final / finalWick / finalOver / finalOverBall` — the 1st-innings score in cricket "runs / wickets in overs.balls" format.
+- `inn2Final / inn2Wick / inn2Over / inn2OverBall / inn2Declared` — optional, only meaningful when `cricketFormat == "TEST"`. Omit (or send `null`) for limited-overs formats. The frontend joins both innings with `" & "` and appends `d` after the runs/wickets when `inn1Declared` / `inn2Declared` is true.
+- `derived.resultKind` — drives the result line styling: `WIN` shows `{winner} won {wonBy}`, `DRAW` shows "Match drawn", `TIE` shows "Match tied", `NO_RESULT` shows "No result". When omitted, the frontend infers `WIN` if `scoreboard.winner` is present.
 - `out.out: true` means the batter was dismissed; `false` means not out.
 - The carousel only shows the top two scorers per side, so `batting` may be truncated server-side.
 - `-256` is the placeholder the current mock uses when a value is unknown; the API SHOULD return real values and omit unknowns rather than encoding `-256`.
@@ -216,7 +229,9 @@ Response 200: MatchSummary[]   // newest/next-up first
 Field semantics:
 
 - `status` is what the card renders as a coloured pill (`RESULT` red, `LIVE` green-pulsing, `UPCOMING` neutral). It MUST agree with the presence of `result`: `UPCOMING` / `LIVE` carry no `result`, `RESULT` MUST carry one.
-- `innings[]` lets the same card render T20 (one entry per side, e.g. `"184/7 (20.0)"`) and multi-day formats (two entries joined with `" & "`, e.g. `"344/10 (119) & 54/1 (18)"`). For `UPCOMING`, both teams' arrays MUST be empty.
+- `cricketFormat` (optional, `T20 | OD | T10 | TEST | HUNDRED`) tells the card how to format `overs`. For `HUNDRED` the progress is rendered as balls (`120/4 (87b)`); for all overs-based formats the `overs` string is rendered verbatim in `X.Y` notation. When omitted, defaults to overs notation.
+- `innings[]` lets the same card render T20/OD/T10 (one entry per side, e.g. `"184/7 (20.0)"`), HUNDRED (one entry, e.g. `"120/4 (87b)"`), and multi-day TEST (two entries joined with `" & "`, e.g. `"344/10 (119) & 54/1 (18)"`). For `UPCOMING`, both teams' arrays MUST be empty.
+- `innings[].balls` is the alternative to `innings[].overs` for `HUNDRED`-format payloads — clients accept either (`overs: "16.4"` or `balls: 100`).
 - `declared` is optional and only meaningful for multi-day matches; the card appends a `d` suffix (e.g. `"344/10d (119)"`) when true.
 - `tournamentLabel` is the short code rendered in the top-right corner of the card (e.g. `"BOTG"`, `"BAN-W VS SL-W"`, `"SLCL S7"`). When omitted the client falls back to `tournament`.
 - `venueLabel` is rendered verbatim under upcoming cards next to the date. When omitted the client uppercases `venue`.
@@ -388,6 +403,8 @@ Response 404: { "error": "Match not found" }
   "innings2": [
     { "over": 1, "runs": 8,  "wickets": 0, "runRate": 8.0 }
   ],
+  "innings3": [ /* same shape — optional, TEST only */ ],
+  "innings4": [ /* same shape — optional, TEST only */ ],
   "innings1WicketTypes": [
     { "label": "Caught out", "count": 2 },
     { "label": "Bowled",     "count": 2 },
@@ -396,14 +413,17 @@ Response 404: { "error": "Match not found" }
     { "label": "LBW",        "count": 0 },
     { "label": "Stumped",    "count": 0 }
   ],
-  "innings2WicketTypes": [ /* same shape */ ]
+  "innings2WicketTypes": [ /* same shape */ ],
+  "innings3WicketTypes": [ /* same shape — optional, TEST only */ ],
+  "innings4WicketTypes": [ /* same shape — optional, TEST only */ ]
 }
 ```
 
 Notes:
 - `innings1` MUST contain one row per over actually bowled in that innings.
 - `runRate` is cumulative (runs per over up to and including that over).
-- `innings1WicketTypes` and `innings2WicketTypes` MUST share the same label order so the pie chart can sum them by index.
+- `innings3` and `innings4` are optional and used only by `cricketFormat: "TEST"` to render the 2nd-innings-each-side overs in the analysis charts. Limited-overs formats (T20/OD/T10/HUNDRED) omit them.
+- All `inningsNWicketTypes` arrays MUST share the same label order so the pie chart can sum them by index.
 
 ```jsonc
 // MatchHeroes
@@ -518,7 +538,7 @@ The full `PUT /matches/:slug` request body the editor sends:
   "homeScore":      "number | null",    // match-total override (optional)
   "awayScore":      "number | null",
   "details": {
-    "cricketFormat":   "T20 | OD | TEST | null",   // game length; drives which innings the editor shows
+    "cricketFormat":   "T20 | OD | T10 | TEST | HUNDRED | null",   // game length; drives which innings the editor shows
 
     "homeInn1Runs":    "number?",
     "homeInn1Wickets": "number? (0-10)",
@@ -558,7 +578,7 @@ The response is the same shape, plus server-managed fields the editor reads back
 |---|---|
 | `sport` | Must equal `"CRICKET"` for this editor. Reject other values with `400`. |
 | `status` | One of `SCHEDULED \| LIVE \| COMPLETED \| CANCELLED \| POSTPONED`. The editor will send `LIVE` automatically on every over-by-over save. |
-| `details.cricketFormat` | One of `T20 \| OD \| TEST` or `null`. Discriminates game length: `T20` and `OD` are single-innings-per-side, `TEST` allows two innings per side. Informational only — the backend MUST NOT reject Inn2 fields when the format is `T20`/`OD`, since admins may switch format on an in-progress match. When the match has a `tournamentSlug` and this field is missing/null on write, the backend MUST inherit it from the linked tournament's `cricketFormat` (see [`TOURNAMENTS_API.md`](../TOURNAMENTS_API.md) → Cricket format inheritance). |
+| `details.cricketFormat` | One of `T20 \| OD \| T10 \| TEST \| HUNDRED` or `null`. Discriminates game length: `T20`, `OD`, `T10`, and `HUNDRED` are single-innings-per-side; `TEST` allows two innings per side. `HUNDRED` measures progress in balls (no overs), so the `*Overs` fields may carry total balls (e.g. `100`) — store as a number. Informational only — the backend MUST NOT reject Inn2 fields based on format, since admins may switch format on an in-progress match. When the match has a `tournamentSlug` and this field is missing/null on write, the backend MUST inherit it from the linked tournament's `cricketFormat` (see [`TOURNAMENTS_API.md`](../TOURNAMENTS_API.md) → Cricket format inheritance). |
 | `details.*Runs` | Integer `≥ 0` or `null`. No upper bound. |
 | `details.*Wickets` | Integer in `[0, 10]` or `null`. |
 | `details.*Overs` | Decimal `X.Y` where `X ≥ 0` and `Y ∈ {0,1,2,3,4,5}`. Examples: `0`, `4`, `4.3`, `19.5`. **`4.6` is invalid** — six legal balls roll the over to `5.0`. Store as a number (the client sends `parseFloat("X.Y")`). |

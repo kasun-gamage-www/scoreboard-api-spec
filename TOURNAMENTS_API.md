@@ -23,7 +23,7 @@ Every tournament is identified by a URL-friendly `slug` (not a numeric id). The 
 | `sport`         | `CRICKET \| RUGBY \| SOCCER \| BADMINTON \| BOWLING \| MOTOR_SPORTS \| BASKETBALL \| NETBALL \| VOLLEYBALL \| CYCLING`                  | required     |
 | `format`        | `LEAGUE \| KNOCKOUT \| GROUP_STAGE \| ROUND_ROBIN`                                                                                     | required     |
 | `status`        | `UPCOMING \| ONGOING \| COMPLETED \| CANCELLED`                                                                                        | `UPCOMING`   |
-| `cricketFormat` | `T20 \| OD \| TEST \| null` — only meaningful when `sport = CRICKET`; inherited by linked matches on write (see below)                  | `null`       |
+| `cricketFormat` | `T20 \| OD \| T10 \| TEST \| HUNDRED \| null` — only meaningful when `sport = CRICKET`; inherited by linked matches on write (see below) | `null`       |
 
 ### Relationship to other resources
 
@@ -54,7 +54,7 @@ When `sport = CRICKET`, the tournament MAY carry a `cricketFormat` (`T20 | OD | 
   "sport":         "CRICKET | RUGBY | SOCCER | BADMINTON | BOWLING | MOTOR_SPORTS | BASKETBALL | NETBALL | VOLLEYBALL | CYCLING",
   "format":        "LEAGUE | KNOCKOUT | GROUP_STAGE | ROUND_ROBIN",
   "status":        "UPCOMING | ONGOING | COMPLETED | CANCELLED",
-  "cricketFormat": "T20 | OD | TEST | null",                                     // only meaningful when sport = CRICKET; inherited by linked matches on write
+  "cricketFormat": "T20 | OD | T10 | TEST | HUNDRED | null",                    // only meaningful when sport = CRICKET; inherited by linked matches on write
   "description":   "string | null",
   "startDate":     "ISO8601 | null",
   "endDate":       "ISO8601 | null",
@@ -91,7 +91,7 @@ Request:
   "sport":         "CRICKET | RUGBY | SOCCER | BADMINTON | BOWLING | MOTOR_SPORTS | BASKETBALL | NETBALL | VOLLEYBALL | CYCLING", // required
   "format":        "LEAGUE | KNOCKOUT | GROUP_STAGE | ROUND_ROBIN",              // required
   "status":        "UPCOMING | ONGOING | COMPLETED | CANCELLED",                 // required, default UPCOMING
-  "cricketFormat": "T20 | OD | TEST | null",                                     // optional; ignored unless sport = CRICKET
+  "cricketFormat": "T20 | OD | T10 | TEST | HUNDRED | null",                    // optional; ignored unless sport = CRICKET
   "description":   "string?",
   "startDate":     "ISO8601?",
   "endDate":       "ISO8601?",

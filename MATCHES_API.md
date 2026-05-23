@@ -99,10 +99,11 @@ All keys are optional. Different sports use disjoint subsets; keys from sports o
 {
   // ---- Cricket ----
   // Innings format: runs (≥0), wickets (0..10), overs (X.Y with Y in 0..5 — 4.6 is illegal, balls roll over to 5.0).
-  // `cricketFormat` discriminates the game length: T20 and OD use Inn1 only per side; TEST may use both.
+  // `cricketFormat` discriminates the game length: T20, OD, T10, and HUNDRED use Inn1 only per side; TEST may use both.
+  // For HUNDRED, the `*Overs` fields carry total balls (0..100) rather than X.Y over notation, since The Hundred has no overs.
   // When the match has a `tournamentSlug`, a missing/null `cricketFormat` is inherited from the tournament on write.
   // Cricket editor details: see CRICKET_API.md §2.
-  "cricketFormat":    "T20 | OD | TEST | null",
+  "cricketFormat":    "T20 | OD | T10 | TEST | HUNDRED | null",
   "homeInn1Runs":     "number?", "homeInn1Wickets": "number?", "homeInn1Overs": "number?",
   "homeInn2Runs":     "number?", "homeInn2Wickets": "number?", "homeInn2Overs": "number?",
   "awayInn1Runs":     "number?", "awayInn1Wickets": "number?", "awayInn1Overs": "number?",
