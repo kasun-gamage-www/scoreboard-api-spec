@@ -1,0 +1,46 @@
+type: object
+required:
+  - kind
+properties:
+  kind:
+    type: string
+    enum:
+      - over-end
+  overNumber:
+    type: integer
+  score:
+    type: string
+  runs:
+    type: integer
+    description: Runs in this over.
+  wickets:
+    type: integer
+    description: Wickets in this over.
+  batters:
+    type: array
+    items:
+      type: object
+      properties:
+        name:
+          type: string
+        notOut:
+          type: boolean
+        runs:
+          type: integer
+        balls:
+          type: integer
+  bowlers:
+    type: array
+    items:
+      type: object
+      properties:
+        name:
+          type: string
+        overs:
+          type: number
+        maidens:
+          type: integer
+        runs:
+          type: integer
+        wickets:
+          type: integer

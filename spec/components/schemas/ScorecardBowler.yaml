@@ -1,0 +1,26 @@
+type: object
+properties:
+  name:
+    type: string
+  captain:
+    type: boolean
+  overs:
+    type: number
+  maidens:
+    type: integer
+  runs:
+    type: integer
+  wickets:
+    type: integer
+  dots:
+    type: integer
+  fours:
+    type: integer
+  sixes:
+    type: integer
+  wides:
+    type: integer
+  noBalls:
+    type: integer
+  economy:
+    type: number

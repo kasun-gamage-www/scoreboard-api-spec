@@ -1,0 +1,16 @@
+type: object
+properties:
+  name:
+    type: string
+  score:
+    type: integer
+  shots:
+    type: integer
+  shotsOnTarget:
+    type: integer
+  corners:
+    type: integer
+  yellowCards:
+    type: integer
+  redCards:
+    type: integer

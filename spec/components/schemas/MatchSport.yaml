@@ -1,0 +1,14 @@
+type: string
+description: Sports used by Match. Adds GOLF (no OTHER).
+enum:
+  - CRICKET
+  - RUGBY
+  - SOCCER
+  - BADMINTON
+  - BOWLING
+  - MOTOR_SPORTS
+  - BASKETBALL
+  - NETBALL
+  - VOLLEYBALL
+  - CYCLING
+  - GOLF

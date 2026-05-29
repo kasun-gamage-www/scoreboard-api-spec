@@ -1,0 +1,16 @@
+type: object
+required:
+  - filename
+  - contentType
+  - folder
+properties:
+  filename:
+    type: string
+    description: Used only to derive the extension; never echoed into the key path.
+    example: sponsor-logo.png
+  contentType:
+    type: string
+    description: MIME type; whitelisted per folder.
+    example: image/png
+  folder:
+    $ref: ./MediaFolder.yaml

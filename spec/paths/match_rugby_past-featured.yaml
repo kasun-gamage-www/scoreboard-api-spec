@@ -1,0 +1,22 @@
+get:
+  tags:
+    - Rugby Display
+  operationId: rugbyPastFeatured
+  summary: Recent featured rugby scorecards (carousel + ticker)
+  parameters:
+    - name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 10
+        maximum: 50
+  responses:
+    '200':
+      description: Featured rugby summaries.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/RugbyFeaturedSummary.yaml

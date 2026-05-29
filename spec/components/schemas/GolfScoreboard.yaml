@@ -1,0 +1,22 @@
+type: object
+description: >-
+  Exactly one of strokePlay / matchPlay / teamCompetition is non-null, matching
+  `format`.
+properties:
+  format:
+    $ref: ./GolfFormat.yaml
+  winner:
+    type: string
+    description: Player/team name, or "" for tied team events.
+  strokePlay:
+    oneOf:
+      - $ref: ./GolfScoreboardStrokePlay.yaml
+      - type: 'null'
+  matchPlay:
+    oneOf:
+      - $ref: ./GolfScoreboardMatchPlay.yaml
+      - type: 'null'
+  teamCompetition:
+    oneOf:
+      - $ref: ./GolfScoreboardTeamComp.yaml
+      - type: 'null'

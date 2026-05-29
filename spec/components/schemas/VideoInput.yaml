@@ -1,0 +1,26 @@
+type: object
+required:
+  - caption
+  - sport
+  - date
+  - source
+  - status
+properties:
+  caption:
+    type: string
+  sport:
+    $ref: ./SportBasic.yaml
+  date:
+    type: string
+    format: date-time
+  source:
+    type: string
+    description: YouTube video id or hosted media URL.
+  status:
+    allOf:
+      - $ref: ./VideoStatus.yaml
+    default: ACTIVE
+  title:
+    type:
+      - string
+      - 'null'

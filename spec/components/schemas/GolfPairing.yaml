@@ -1,0 +1,36 @@
+type: object
+properties:
+  order:
+    type: integer
+  homePlayers:
+    type: array
+    items:
+      type: string
+  awayPlayers:
+    type: array
+    items:
+      type: string
+  homeUp:
+    type: integer
+  holesPlayed:
+    type: integer
+  holesRemaining:
+    type: integer
+  status:
+    type: string
+    enum:
+      - IN_PROGRESS
+      - HOME_WIN
+      - AWAY_WIN
+      - HALVED
+  resultLabel:
+    type: string
+  pointsHome:
+    type:
+      - number
+      - 'null'
+    description: 0, 0.5, or 1 once complete.
+  pointsAway:
+    type:
+      - number
+      - 'null'

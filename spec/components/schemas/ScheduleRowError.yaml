@@ -1,0 +1,8 @@
+type: object
+properties:
+  row:
+    type: integer
+    example: 3
+  reason:
+    type: string
+    example: Missing homeTeamName

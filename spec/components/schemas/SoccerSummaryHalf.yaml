@@ -1,0 +1,13 @@
+type: object
+properties:
+  goals:
+    type: integer
+  shots:
+    type: integer
+  shotsOnTarget:
+    type: integer
+  corners:
+    type: integer
+  label:
+    type: string
+    description: '''e.g. "1st Half", "Extra Time".'''

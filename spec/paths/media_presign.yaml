@@ -1,0 +1,42 @@
+post:
+  tags:
+    - Media
+  operationId: mediaPresign
+  summary: Presign an S3 PUT for a direct browser upload
+  description: >-
+    Admin-only. Returns a short-lived presigned S3 `PUT` plus the canonical
+    public URL to persist. The signature pins content-type and a max byte size,
+    so S3 itself rejects oversize / content-type-swapped uploads.
+  security:
+    - accessToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/PresignRequest.yaml
+  responses:
+    '200':
+      description: Presigned upload details.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PresignResponse.yaml
+    '400':
+      description: Invalid contentType / folder / filename.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          examples:
+            contentType:
+              value:
+                error: Invalid contentType
+            folder:
+              value:
+                error: Invalid folder
+            filename:
+              value:
+                error: Invalid filename
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml

@@ -1,0 +1,32 @@
+type: object
+description: Rugby variant of the past-featured summary.
+required:
+  - slug
+  - sport
+properties:
+  embedSlug:
+    type: string
+  slug:
+    type: string
+    description: Canonical slug for match detail.
+  sport:
+    type: string
+  tournament:
+    type: string
+  homeTeam:
+    type: string
+  awayTeam:
+    type: string
+  startTime:
+    type: string
+    format: date-time
+  group:
+    type:
+      - string
+      - 'null'
+  venue:
+    type: string
+  derived:
+    $ref: ./FeaturedDerived.yaml
+  scoreboard:
+    $ref: ./RugbyScoreboard.yaml

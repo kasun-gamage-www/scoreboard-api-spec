@@ -1,0 +1,40 @@
+type: object
+description: Stroke-play leaderboard row (display).
+properties:
+  rank:
+    type: integer
+    description: Numeric rank; client renders ties as "T1".
+  tied:
+    type: boolean
+  name:
+    type: string
+  playerId:
+    type:
+      - string
+      - 'null'
+    description: Optional FK to Player.slug.
+  country:
+    type: string
+    description: ISO 3-letter code.
+  imageUrl:
+    type: string
+    description: Empty string allowed.
+  total:
+    type: integer
+  today:
+    type: integer
+  thru:
+    $ref: ./GolfThru.yaml
+  strokes:
+    type: integer
+  status:
+    type: string
+    enum:
+      - ACTIVE
+      - CUT
+      - WD
+      - DQ
+  rounds:
+    type: array
+    items:
+      $ref: ./GolfRound.yaml

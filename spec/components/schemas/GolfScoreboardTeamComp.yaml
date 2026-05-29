@@ -1,0 +1,15 @@
+type: object
+properties:
+  homeTeam:
+    type: string
+  awayTeam:
+    type: string
+  homeTeamPoints:
+    type: number
+    description: Halves count as 0.5.
+  awayTeamPoints:
+    type: number
+  totalPoints:
+    type: number
+  resultLabel:
+    type: string

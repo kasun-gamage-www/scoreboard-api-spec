@@ -1,0 +1,38 @@
+type: object
+required:
+  - name
+  - sport
+  - status
+properties:
+  name:
+    type: string
+  sport:
+    $ref: ./SportWithOther.yaml
+  status:
+    allOf:
+      - $ref: ./PlayerStatus.yaml
+    default: ACTIVE
+  bio:
+    type:
+      - string
+      - 'null'
+  team:
+    type:
+      - string
+      - 'null'
+  position:
+    type:
+      - string
+      - 'null'
+  country:
+    type:
+      - string
+      - 'null'
+  photoUrl:
+    type:
+      - string
+      - 'null'
+  jerseyNumber:
+    type:
+      - number
+      - 'null'

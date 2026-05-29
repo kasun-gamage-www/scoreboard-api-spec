@@ -4,9 +4,14 @@
   "private": true,
   "description": "OpenAPI specification and Swagger UI for the Scoreboard API",
   "scripts": {
-    "start": "http-server . -p 8080 -o -c-1"
+    "start": "http-server . -p 8080 -o -c-1",
+    "lint": "redocly lint",
+    "bundle": "redocly bundle scoreboard@v1 -o openapi.yaml",
+    "preview": "redocly preview-docs spec/openapi.yaml",
+    "build": "npm run lint && npm run bundle"
   },
   "devDependencies": {
+    "@redocly/cli": "^2.31.5",
     "http-server": "^14.1.1"
   }
 }

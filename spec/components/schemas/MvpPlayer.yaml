@@ -1,0 +1,18 @@
+type: object
+properties:
+  rank:
+    type: integer
+  name:
+    type: string
+  team:
+    type: string
+  imageUrl:
+    type: string
+  batting:
+    type: number
+  bowling:
+    type: number
+  fielding:
+    type: number
+  total:
+    type: number

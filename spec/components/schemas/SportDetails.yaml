@@ -1,0 +1,211 @@
+type: object
+description: >-
+  Sport-specific scoring fields. Different sports use disjoint subsets; keys
+  from other sports MAY be present and MUST be preserved verbatim on write.
+  Therefore additional/unknown keys are allowed. Cricket overs use X.Y notation
+  (Y in 0..5; 4.6 is illegal, rolls to 5.0); for HUNDRED the `*Overs` fields
+  carry total balls.
+additionalProperties: true
+properties:
+  cricketFormat:
+    $ref: ./CricketFormat.yaml
+  homeInn1Runs:
+    type:
+      - number
+      - 'null'
+  homeInn1Wickets:
+    type:
+      - number
+      - 'null'
+    minimum: 0
+    maximum: 10
+  homeInn1Overs:
+    type:
+      - number
+      - 'null'
+    description: X.Y with Y in 0..5 (balls), or total balls for HUNDRED.
+  homeInn2Runs:
+    type:
+      - number
+      - 'null'
+  homeInn2Wickets:
+    type:
+      - number
+      - 'null'
+    minimum: 0
+    maximum: 10
+  homeInn2Overs:
+    type:
+      - number
+      - 'null'
+  awayInn1Runs:
+    type:
+      - number
+      - 'null'
+  awayInn1Wickets:
+    type:
+      - number
+      - 'null'
+    minimum: 0
+    maximum: 10
+  awayInn1Overs:
+    type:
+      - number
+      - 'null'
+  awayInn2Runs:
+    type:
+      - number
+      - 'null'
+  awayInn2Wickets:
+    type:
+      - number
+      - 'null'
+    minimum: 0
+    maximum: 10
+  awayInn2Overs:
+    type:
+      - number
+      - 'null'
+  extraTime:
+    type:
+      - boolean
+      - 'null'
+  homeGoalsET:
+    type:
+      - number
+      - 'null'
+  awayGoalsET:
+    type:
+      - number
+      - 'null'
+  penalties:
+    type:
+      - boolean
+      - 'null'
+  homePenalties:
+    type:
+      - number
+      - 'null'
+  awayPenalties:
+    type:
+      - number
+      - 'null'
+  homeTries:
+    type:
+      - number
+      - 'null'
+  homeConversions:
+    type:
+      - number
+      - 'null'
+  homeDropGoals:
+    type:
+      - number
+      - 'null'
+  homeRugbyPenalties:
+    type:
+      - number
+      - 'null'
+  awayTries:
+    type:
+      - number
+      - 'null'
+  awayConversions:
+    type:
+      - number
+      - 'null'
+  awayDropGoals:
+    type:
+      - number
+      - 'null'
+  awayRugbyPenalties:
+    type:
+      - number
+      - 'null'
+  homeQ1:
+    type:
+      - number
+      - 'null'
+  homeQ2:
+    type:
+      - number
+      - 'null'
+  homeQ3:
+    type:
+      - number
+      - 'null'
+  homeQ4:
+    type:
+      - number
+      - 'null'
+  homeOT:
+    type:
+      - number
+      - 'null'
+  awayQ1:
+    type:
+      - number
+      - 'null'
+  awayQ2:
+    type:
+      - number
+      - 'null'
+  awayQ3:
+    type:
+      - number
+      - 'null'
+  awayQ4:
+    type:
+      - number
+      - 'null'
+  awayOT:
+    type:
+      - number
+      - 'null'
+  sets:
+    type: array
+    maxItems: 5
+    items:
+      $ref: ./TennisSet.yaml
+  format:
+    allOf:
+      - $ref: ./GolfFormat.yaml
+    description: Discriminates the golf block.
+  coursePar:
+    type:
+      - number
+      - 'null'
+  courseYards:
+    type:
+      - number
+      - 'null'
+  rounds:
+    type:
+      - number
+      - 'null'
+  currentRound:
+    type:
+      - number
+      - 'null'
+  cutLine:
+    type:
+      - number
+      - 'null'
+  winner:
+    type:
+      - string
+      - 'null'
+    description: Player or team name; empty when no winner yet.
+  leaderboard:
+    type: array
+    description: STROKE_PLAY (and team-aggregate).
+    items:
+      $ref: ./GolfStoredLeaderboardEntry.yaml
+  matchPlay:
+    oneOf:
+      - $ref: ./GolfStoredMatchPlay.yaml
+      - type: 'null'
+  teamCompetition:
+    oneOf:
+      - $ref: ./GolfStoredTeamCompetition.yaml
+      - type: 'null'

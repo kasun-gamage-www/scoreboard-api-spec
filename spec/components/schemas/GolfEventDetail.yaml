@@ -1,0 +1,97 @@
+type: object
+description: >-
+  Full golf event detail. For stroke play, matchPlayCard/teamCompetition are
+  null (and vice versa). startTime/eventDate/lastUpdated are pre-formatted
+  display strings.
+required:
+  - slug
+  - format
+properties:
+  slug:
+    type: string
+  tournament:
+    type: string
+  seriesName:
+    type: string
+  status:
+    type: string
+    enum:
+      - Past
+      - Live
+      - Upcoming
+  format:
+    $ref: ./GolfFormat.yaml
+  stage:
+    type:
+      - string
+      - 'null'
+    description: '''e.g. "Round 3", "Quarter Final", "Singles".'''
+  venue:
+    type: string
+  city:
+    type: string
+  location:
+    type: string
+    description: Display string.
+  courseName:
+    type: string
+  coursePar:
+    type: integer
+  courseYards:
+    type: integer
+    description: Optional.
+  rounds:
+    type: integer
+    description: Total scheduled rounds.
+  currentRound:
+    type: integer
+    description: 0 when upcoming; equals rounds when complete.
+  cutLine:
+    type:
+      - integer
+      - 'null'
+    description: Stroke play only; integer vs par or null.
+  startTime:
+    type: string
+    description: Display string.
+  eventDate:
+    type: string
+    description: Display string.
+  result:
+    type: string
+    description: Free text; empty string when no result.
+  leaderboard:
+    type: array
+    description: >-
+      Stroke play (and team competition by team). MUST be sorted by rank
+      ascending.
+    items:
+      $ref: ./GolfLeaderboardEntry.yaml
+  matchPlayCard:
+    oneOf:
+      - $ref: ./GolfMatchPlayCard.yaml
+      - type: 'null'
+  teamCompetition:
+    oneOf:
+      - $ref: ./GolfTeamCompetitionDetail.yaml
+      - type: 'null'
+  highlights:
+    type: array
+    items:
+      $ref: ./GolfHighlight.yaml
+  videoEmbedUrl:
+    type: string
+    description: Empty string when no video; else youtube/vimeo host only.
+  streamTitle:
+    type: string
+  rightsHolder:
+    type: string
+  totalViews:
+    type: integer
+  liveViewers:
+    type: integer
+  lastUpdated:
+    type: string
+    description: Display string.
+  lastUpdatedBy:
+    type: string

@@ -1,0 +1,13 @@
+type:
+  - string
+  - 'null'
+description: UAE-specific; null for venues outside the UAE.
+enum:
+  - ABU_DHABI
+  - DUBAI
+  - SHARJAH
+  - AJMAN
+  - UMM_AL_QUWAIN
+  - RAS_AL_KHAIMAH
+  - FUJAIRAH
+  - null

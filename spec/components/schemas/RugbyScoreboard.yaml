@@ -1,0 +1,9 @@
+type: object
+properties:
+  winner:
+    type: string
+    description: Team name; empty when resultKind != WIN.
+  homeTeam:
+    $ref: ./RugbyScoreboardTeam.yaml
+  awayTeam:
+    $ref: ./RugbyScoreboardTeam.yaml

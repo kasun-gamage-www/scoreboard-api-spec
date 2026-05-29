@@ -1,0 +1,44 @@
+type: object
+description: Lightweight live golf payload. Exactly one body block matches `format`.
+properties:
+  slug:
+    type: string
+  status:
+    type: string
+    example: LIVE
+  format:
+    $ref: ./GolfFormat.yaml
+  currentRound:
+    type: integer
+  leaderboard:
+    type: array
+    description: Top N only, already sorted (stroke play).
+    items:
+      $ref: ./GolfLiveLeader.yaml
+  matchPlay:
+    oneOf:
+      - type: object
+        properties:
+          homeUp:
+            type: integer
+          holesRemaining:
+            type: integer
+          currentHole:
+            type: integer
+          resultLabel:
+            type: string
+      - type: 'null'
+  teamCompetition:
+    oneOf:
+      - type: object
+        properties:
+          homeTeamPoints:
+            type: number
+          awayTeamPoints:
+            type: number
+          liveSession:
+            type: string
+      - type: 'null'
+  lastUpdated:
+    type: string
+    format: date-time

@@ -1,0 +1,38 @@
+type: object
+description: >-
+  Powers Manhattan / Run-rate / Worm / Wicket-type charts. innings3/4 and their
+  wicket-type arrays are TEST-only. All wicketTypes arrays MUST share label
+  order.
+properties:
+  innings1:
+    type: array
+    items:
+      $ref: ./AnalysisOver.yaml
+  innings2:
+    type: array
+    items:
+      $ref: ./AnalysisOver.yaml
+  innings3:
+    type: array
+    items:
+      $ref: ./AnalysisOver.yaml
+  innings4:
+    type: array
+    items:
+      $ref: ./AnalysisOver.yaml
+  innings1WicketTypes:
+    type: array
+    items:
+      $ref: ./WicketType.yaml
+  innings2WicketTypes:
+    type: array
+    items:
+      $ref: ./WicketType.yaml
+  innings3WicketTypes:
+    type: array
+    items:
+      $ref: ./WicketType.yaml
+  innings4WicketTypes:
+    type: array
+    items:
+      $ref: ./WicketType.yaml

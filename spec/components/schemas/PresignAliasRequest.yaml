@@ -1,0 +1,14 @@
+type: object
+required:
+  - filename
+  - contentType
+description: >-
+  Alias body. `folder` is hard-coded by the endpoint; any client-supplied
+  `folder` is ignored.
+properties:
+  filename:
+    type: string
+    example: manchester-fc.png
+  contentType:
+    type: string
+    example: image/png

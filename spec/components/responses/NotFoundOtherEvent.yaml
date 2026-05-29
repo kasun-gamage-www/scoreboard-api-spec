@@ -1,0 +1,7 @@
+description: Other event not found.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/Error.yaml
+    example:
+      error: Other event not found

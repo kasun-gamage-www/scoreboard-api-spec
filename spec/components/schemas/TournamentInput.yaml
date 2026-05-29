@@ -1,0 +1,43 @@
+type: object
+required:
+  - name
+  - sport
+  - format
+  - status
+properties:
+  name:
+    type: string
+  sport:
+    $ref: ./SportBasic.yaml
+  format:
+    $ref: ./TournamentFormat.yaml
+  status:
+    allOf:
+      - $ref: ./TournamentStatus.yaml
+    default: UPCOMING
+  cricketFormat:
+    allOf:
+      - $ref: ./CricketFormat.yaml
+    description: Ignored unless sport = CRICKET.
+  description:
+    type:
+      - string
+      - 'null'
+  startDate:
+    type:
+      - string
+      - 'null'
+    format: date-time
+  endDate:
+    type:
+      - string
+      - 'null'
+    format: date-time
+  location:
+    type:
+      - string
+      - 'null'
+  logoUrl:
+    type:
+      - string
+      - 'null'

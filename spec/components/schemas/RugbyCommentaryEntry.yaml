@@ -1,0 +1,10 @@
+oneOf:
+  - $ref: ./RugbyCommentaryEvent.yaml
+  - $ref: ./RugbyCommentaryMinuteEnd.yaml
+  - $ref: ./RugbyCommentaryNotification.yaml
+discriminator:
+  propertyName: kind
+  mapping:
+    event: ./RugbyCommentaryEvent.yaml
+    minute-end: ./RugbyCommentaryMinuteEnd.yaml
+    notification: ./RugbyCommentaryNotification.yaml

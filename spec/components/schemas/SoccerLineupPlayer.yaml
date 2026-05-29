@@ -1,0 +1,12 @@
+type: object
+properties:
+  number:
+    type: integer
+  name:
+    type: string
+  position:
+    type: string
+    description: '''e.g. GK, CB, CAM, ST.'''
+  captain:
+    type: boolean
+    default: false

@@ -1,0 +1,8 @@
+type: object
+properties:
+  playerOfMatch:
+    $ref: ./SoccerHeroPlayer.yaml
+  topScorer:
+    $ref: ./SoccerHeroPlayer.yaml
+  topAssist:
+    $ref: ./SoccerHeroPlayer.yaml

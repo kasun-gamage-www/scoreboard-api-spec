@@ -1,0 +1,16 @@
+type:
+  - string
+  - 'null'
+description: Sports used by OtherEvent. Nullable; no GOLF, no OTHER.
+enum:
+  - CRICKET
+  - RUGBY
+  - SOCCER
+  - BADMINTON
+  - BOWLING
+  - MOTOR_SPORTS
+  - BASKETBALL
+  - NETBALL
+  - VOLLEYBALL
+  - CYCLING
+  - null

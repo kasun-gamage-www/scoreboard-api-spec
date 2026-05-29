@@ -1,0 +1,47 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Tournaments
+  operationId: tournamentGet
+  summary: Fetch a tournament by slug
+  responses:
+    '200':
+      description: The tournament.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Tournament.yaml
+    '404':
+      $ref: ../components/responses/NotFoundTournament.yaml
+put:
+  tags:
+    - Tournaments
+  operationId: tournamentReplace
+  summary: Full replacement of a tournament
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/TournamentInput.yaml
+  responses:
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Tournament.yaml
+    '404':
+      $ref: ../components/responses/NotFoundTournament.yaml
+delete:
+  tags:
+    - Tournaments
+  operationId: tournamentDelete
+  summary: Delete a tournament
+  description: >-
+    Does NOT cascade. The backend SHOULD reject the delete while referencing
+    matches/events exist, or null out `tournamentSlug` on referencing rows.
+  responses:
+    '204':
+      description: Deleted.

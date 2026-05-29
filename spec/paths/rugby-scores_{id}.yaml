@@ -1,0 +1,55 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      type: string
+get:
+  tags:
+    - Rugby Legacy
+  operationId: rugbyScoreGet
+  deprecated: true
+  summary: '[Deprecated] Fetch a legacy rugby-score by id'
+  responses:
+    '200':
+      description: Legacy score.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/RugbyScore.yaml
+put:
+  tags:
+    - Rugby Legacy
+  operationId: rugbyScoreReplace
+  deprecated: true
+  summary: '[Deprecated] Replace a legacy rugby-score'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/RugbyScoreInput.yaml
+  responses:
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/RugbyScore.yaml
+delete:
+  tags:
+    - Rugby Legacy
+  operationId: rugbyScoreDelete
+  deprecated: true
+  summary: '[Deprecated] Delete a legacy rugby-score'
+  responses:
+    '200':
+      description: Deleted.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: Score deleted

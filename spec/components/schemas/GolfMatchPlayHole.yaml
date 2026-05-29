@@ -1,0 +1,18 @@
+type: object
+properties:
+  hole:
+    type: integer
+    minimum: 1
+    maximum: 18
+  par:
+    type: integer
+  homeStrokes:
+    type: integer
+  awayStrokes:
+    type: integer
+  status:
+    type: string
+    enum:
+      - HOME
+      - AWAY
+      - HALVED

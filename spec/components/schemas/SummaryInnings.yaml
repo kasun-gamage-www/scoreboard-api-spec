@@ -1,0 +1,15 @@
+type: object
+properties:
+  runs:
+    type: integer
+  wickets:
+    type: integer
+  overs:
+    type: string
+    description: '''X.Y notation (e.g. "20.0"). Alternative to `balls`.'''
+  balls:
+    type: integer
+    description: For HUNDRED format; alternative to `overs`.
+  declared:
+    type: boolean
+    description: Optional, multi-day only; appends a `d` suffix.

@@ -1,0 +1,6 @@
+name: slug
+in: path
+required: true
+description: Backend-generated URL-friendly identifier.
+schema:
+  type: string

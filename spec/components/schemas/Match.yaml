@@ -1,0 +1,75 @@
+type: object
+required:
+  - slug
+  - sport
+  - homeTeamName
+  - awayTeamName
+  - status
+  - featured
+  - createdAt
+  - updatedAt
+properties:
+  slug:
+    type: string
+  sport:
+    $ref: ./MatchSport.yaml
+  homeTeamName:
+    type: string
+    description: Free-text team name, not a Team.slug FK.
+  awayTeamName:
+    type: string
+  status:
+    $ref: ./MatchStatus.yaml
+  tournamentSlug:
+    type:
+      - string
+      - 'null'
+    description: FK to Tournament.slug; null for independent/friendly.
+  matchType:
+    $ref: ./MatchType.yaml
+  venue:
+    type:
+      - string
+      - 'null'
+  scheduledAt:
+    type:
+      - string
+      - 'null'
+    format: date-time
+  referee:
+    type:
+      - string
+      - 'null'
+  notes:
+    type:
+      - string
+      - 'null'
+    description: Free-text result / commentary line.
+  homeScore:
+    type:
+      - number
+      - 'null'
+    description: Match-total override; admin-managed, not derived.
+  awayScore:
+    type:
+      - number
+      - 'null'
+  featured:
+    type: boolean
+    description: >-
+      Read-only via CRUD; set via /matches/:slug/featured. At most one true
+      globally.
+  details:
+    $ref: ./SportDetails.yaml
+  homeTeamPlayers:
+    type: array
+    items:
+      $ref: ./EmbeddedPlayer.yaml
+  awayTeamPlayers:
+    type: array
+    items:
+      $ref: ./EmbeddedPlayer.yaml
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

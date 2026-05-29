@@ -1,0 +1,13 @@
+type: object
+properties:
+  par:
+    type: integer
+  rounds:
+    type: integer
+  currentRound:
+    type: integer
+  leaders:
+    type: array
+    description: Top N, ordered. May be truncated server-side.
+    items:
+      $ref: ./GolfLeader.yaml

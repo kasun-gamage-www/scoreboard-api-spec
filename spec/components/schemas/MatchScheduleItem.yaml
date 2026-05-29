@@ -1,0 +1,47 @@
+type: object
+description: Schedule row. startTime MUST include a timezone offset.
+required:
+  - slug
+  - homeTeam
+  - awayTeam
+  - startTime
+  - status
+properties:
+  slug:
+    type: string
+  embedSlug:
+    type: string
+    description: Optional carousel alias resolving to the same match.
+  tournament:
+    type: string
+  stage:
+    type:
+      - string
+      - 'null'
+    description: e.g. Group | Quarter Final | Semi Final | Final.
+  match:
+    type: string
+    description: Optional bracket label.
+  matchNumber:
+    type: integer
+    description: Optional sequence number.
+  homeTeam:
+    type: string
+  awayTeam:
+    type: string
+  startTime:
+    type: string
+    format: date-time
+    description: ISO8601 with timezone.
+  group:
+    type: string
+    description: Optional, group-stage only.
+  venue:
+    type: string
+  ground:
+    type: string
+    description: Optional short label.
+  status:
+    $ref: ./MatchStatus.yaml
+  featured:
+    type: boolean

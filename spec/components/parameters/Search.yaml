@@ -1,0 +1,6 @@
+name: search
+in: query
+required: false
+description: Case-insensitive substring filter on `name`.
+schema:
+  type: string

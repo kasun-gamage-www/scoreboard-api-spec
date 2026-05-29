@@ -1,0 +1,12 @@
+type: object
+properties:
+  name:
+    type: string
+  score:
+    type: string
+    description: Total points as a string.
+  tries:
+    type: integer
+  halftime:
+    type: integer
+    description: Points at halftime.

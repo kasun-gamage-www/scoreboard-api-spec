@@ -1,0 +1,9 @@
+type: string
+enum:
+  - TRAINING
+  - EXHIBITION
+  - CEREMONY
+  - AWARD_CEREMONY
+  - PRESS_CONFERENCE
+  - CLINIC
+  - OTHER

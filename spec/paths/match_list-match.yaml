@@ -1,0 +1,50 @@
+get:
+  tags:
+    - Match Display (shared)
+  operationId: matchListMatch
+  summary: Cricket schedule feed (past + upcoming)
+  description: >-
+    The cricket schedule view. In the current server this returns the cricket
+    schedule and filters out any non-cricket `sport` value. Rugby and soccer use
+    their own `/match/list-rugby` and `/match/list-soccer` endpoints. The client
+    filters upcoming vs. past by `startTime` and picks the next one for the
+    countdown.
+  parameters:
+    - name: sport
+      in: query
+      required: false
+      description: e.g. CRICKET or GOLF. When omitted, returns all sports.
+      schema:
+        type: string
+    - name: tournament
+      in: query
+      required: false
+      description: Tournament slug.
+      schema:
+        type: string
+    - name: from
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    - name: to
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    - name: status
+      in: query
+      required: false
+      schema:
+        $ref: ../components/schemas/MatchStatus.yaml
+  responses:
+    '200':
+      description: Schedule items.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/MatchScheduleItem.yaml

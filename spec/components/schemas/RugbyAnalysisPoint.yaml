@@ -1,0 +1,10 @@
+type: object
+properties:
+  minute:
+    type: integer
+  points:
+    type: integer
+    description: Cumulative points up to this minute.
+  runRate:
+    type: number
+    description: Points per minute up to this point.

@@ -1,0 +1,19 @@
+type: object
+required:
+  - title
+  - status
+properties:
+  title:
+    type: string
+  status:
+    allOf:
+      - $ref: ./PhotoStatus.yaml
+    default: DRAFT
+  description:
+    type:
+      - string
+      - 'null'
+  imageUrl:
+    type:
+      - string
+      - 'null'

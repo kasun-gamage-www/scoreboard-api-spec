@@ -1,0 +1,27 @@
+type: object
+required:
+  - slug
+  - title
+  - status
+  - createdAt
+  - updatedAt
+properties:
+  slug:
+    type: string
+  title:
+    type: string
+  status:
+    $ref: ./PhotoStatus.yaml
+  description:
+    type:
+      - string
+      - 'null'
+  imageUrl:
+    type:
+      - string
+      - 'null'
+    description: Public URL from /photos/upload.
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

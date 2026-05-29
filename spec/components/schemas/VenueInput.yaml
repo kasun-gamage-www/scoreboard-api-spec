@@ -1,0 +1,52 @@
+type: object
+required:
+  - name
+  - type
+  - status
+properties:
+  name:
+    type: string
+  type:
+    $ref: ./VenueType.yaml
+  status:
+    allOf:
+      - $ref: ./VenueStatus.yaml
+    default: ACTIVE
+  description:
+    type:
+      - string
+      - 'null'
+  capacity:
+    type:
+      - number
+      - 'null'
+  address:
+    type:
+      - string
+      - 'null'
+  emirate:
+    $ref: ./Emirate.yaml
+  city:
+    type:
+      - string
+      - 'null'
+  country:
+    type:
+      - string
+      - 'null'
+  website:
+    type:
+      - string
+      - 'null'
+  email:
+    type:
+      - string
+      - 'null'
+  phone:
+    type:
+      - string
+      - 'null'
+  imageUrl:
+    type:
+      - string
+      - 'null'

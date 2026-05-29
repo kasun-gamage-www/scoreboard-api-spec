@@ -1,0 +1,32 @@
+get:
+  tags:
+    - Venues
+  operationId: venuesList
+  summary: List all venues
+  responses:
+    '200':
+      description: All venues.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Venue.yaml
+post:
+  tags:
+    - Venues
+  operationId: venueCreate
+  summary: Create a venue
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/VenueInput.yaml
+  responses:
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Venue.yaml

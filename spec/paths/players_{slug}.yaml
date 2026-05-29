@@ -1,0 +1,44 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Players
+  operationId: playerGet
+  summary: Fetch a player by slug
+  responses:
+    '200':
+      description: The player.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Player.yaml
+    '404':
+      $ref: ../components/responses/NotFoundPlayer.yaml
+put:
+  tags:
+    - Players
+  operationId: playerReplace
+  summary: Full replacement of a player
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/PlayerInput.yaml
+  responses:
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Player.yaml
+    '404':
+      $ref: ../components/responses/NotFoundPlayer.yaml
+delete:
+  tags:
+    - Players
+  operationId: playerDelete
+  summary: Delete a player
+  responses:
+    '204':
+      description: Deleted.

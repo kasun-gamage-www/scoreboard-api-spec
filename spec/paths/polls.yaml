@@ -1,0 +1,76 @@
+get:
+  tags:
+    - Polls
+  operationId: pollsList
+  summary: List polls for the public page
+  description: >-
+    Safe to call without credentials. When a `voterId` cookie or JWT is present,
+    `hasVoted` / `votedOptionId` are populated per poll. Send `withCredentials`
+    so the voter cookie round-trips.
+  parameters:
+    - name: filter
+      in: query
+      required: false
+      description: >-
+        `latest` (ACTIVE, createdAt DESC), `popular` (ACTIVE, totalVotes DESC
+        then createdAt DESC), `closed` (CLOSED + ACTIVE-past-endDate, endDate
+        DESC then createdAt DESC). Unknown values → 400.
+      schema:
+        type: string
+        enum:
+          - popular
+          - latest
+          - closed
+        default: latest
+    - name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+    - name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+  responses:
+    '200':
+      description: Paged polls matching the filter.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PollListResponse.yaml
+    '400':
+      description: Unknown filter value.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: Invalid filter
+post:
+  tags:
+    - Polls
+  operationId: pollCreate
+  summary: Create a poll (admin)
+  description: >-
+    `options` is a flat array of plain strings; the backend assigns each a
+    stable `id`. Defaults `status` to DRAFT so the poll is hidden until
+    activated.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/PollInput.yaml
+  responses:
+    '201':
+      description: Created (full Poll shape; totalVotes 0; options have ids).
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Poll.yaml

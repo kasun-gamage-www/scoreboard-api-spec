@@ -1,0 +1,63 @@
+type: object
+required:
+  - slug
+  - name
+  - type
+  - primarySport
+  - status
+  - primaryColor
+  - secondaryColor
+  - createdAt
+  - updatedAt
+properties:
+  slug:
+    type: string
+  name:
+    type: string
+  type:
+    $ref: ./ClubType.yaml
+  primarySport:
+    $ref: ./SportWithOther.yaml
+  status:
+    $ref: ./ClubStatus.yaml
+  description:
+    type:
+      - string
+      - 'null'
+  city:
+    type:
+      - string
+      - 'null'
+  country:
+    type:
+      - string
+      - 'null'
+  foundedYear:
+    type:
+      - number
+      - 'null'
+  website:
+    type:
+      - string
+      - 'null'
+  email:
+    type:
+      - string
+      - 'null'
+  logoUrl:
+    type:
+      - string
+      - 'null'
+    description: Public URL from /clubs/upload.
+  primaryColor:
+    type: string
+    description: Hex color.
+    default: '#1976d2'
+  secondaryColor:
+    type: string
+    description: Hex color.
+    default: '#ffffff'
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

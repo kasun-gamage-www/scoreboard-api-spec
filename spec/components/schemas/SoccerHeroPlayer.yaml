@@ -1,0 +1,34 @@
+type: object
+description: >-
+  Hero card. `stats` carries the fields relevant to the role (goals/assists/
+  shots for scorers, saves/penaltiesSaved for keepers, keyPasses/crosses for the
+  top assister).
+properties:
+  name:
+    type: string
+  team:
+    type: string
+  imageUrl:
+    type: string
+    description: Empty string allowed.
+  stats:
+    type: object
+    properties:
+      goals:
+        type: integer
+      assists:
+        type: integer
+      shots:
+        type: integer
+      shotsOnTarget:
+        type: integer
+      saves:
+        type: integer
+      penaltiesSaved:
+        type: integer
+      goalsConceded:
+        type: integer
+      keyPasses:
+        type: integer
+      crosses:
+        type: integer

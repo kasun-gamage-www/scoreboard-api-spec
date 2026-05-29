@@ -1,0 +1,44 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Photos
+  operationId: photoGet
+  summary: Fetch a photo by slug
+  responses:
+    '200':
+      description: The photo.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Photo.yaml
+    '404':
+      $ref: ../components/responses/NotFoundPhoto.yaml
+put:
+  tags:
+    - Photos
+  operationId: photoReplace
+  summary: Full replacement of a photo
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/PhotoInput.yaml
+  responses:
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Photo.yaml
+    '404':
+      $ref: ../components/responses/NotFoundPhoto.yaml
+delete:
+  tags:
+    - Photos
+  operationId: photoDelete
+  summary: Delete a photo
+  responses:
+    '204':
+      description: Deleted.

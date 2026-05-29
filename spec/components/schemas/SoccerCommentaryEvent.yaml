@@ -1,0 +1,26 @@
+type: object
+required:
+  - kind
+properties:
+  kind:
+    type: string
+    enum:
+      - event
+  minute:
+    type: string
+  badge:
+    type: string
+    enum:
+      - goal
+      - yellow
+      - red
+      - corner
+      - whistle
+      - trophy
+  badgeLabel:
+    type: string
+    description: '''e.g. GOAL | YC | RC | FT.'''
+  description:
+    type: string
+  isScoring:
+    type: boolean

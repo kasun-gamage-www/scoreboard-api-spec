@@ -1,0 +1,12 @@
+type: object
+properties:
+  homePlayer:
+    type: string
+  awayPlayer:
+    type: string
+  homeUp:
+    type: integer
+  holesRemaining:
+    type: integer
+  resultLabel:
+    type: string

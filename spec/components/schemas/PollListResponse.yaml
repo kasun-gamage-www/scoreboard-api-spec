@@ -1,0 +1,24 @@
+type: object
+required:
+  - filter
+  - limit
+  - offset
+  - total
+  - items
+properties:
+  filter:
+    type: string
+    example: latest
+  limit:
+    type: integer
+    example: 20
+  offset:
+    type: integer
+    example: 0
+  total:
+    type: integer
+    description: Total matching the filter, ignoring limit/offset.
+  items:
+    type: array
+    items:
+      $ref: ./Poll.yaml

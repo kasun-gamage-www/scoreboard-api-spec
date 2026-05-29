@@ -1,0 +1,13 @@
+type: object
+properties:
+  name:
+    type: string
+  position:
+    type: string
+  minute:
+    type: integer
+  kind:
+    type: string
+    description: '''Try | Conversion | Penalty | Drop Goal.'''
+  points:
+    type: integer

@@ -1,0 +1,50 @@
+type: object
+description: Golf summary card. Exactly one body block matches `format`.
+required:
+  - slug
+  - sport
+  - format
+  - status
+properties:
+  slug:
+    type: string
+  embedSlug:
+    type: string
+  sport:
+    type: string
+    example: GOLF
+  format:
+    $ref: ./GolfFormat.yaml
+  tournament:
+    type: string
+  tournamentLabel:
+    type: string
+  status:
+    type: string
+    enum:
+      - UPCOMING
+      - LIVE
+      - RESULT
+  startTime:
+    type: string
+    format: date-time
+  venue:
+    type: string
+  venueLabel:
+    type: string
+  strokePlay:
+    oneOf:
+      - $ref: ./GolfSummaryStrokePlay.yaml
+      - type: 'null'
+  matchPlay:
+    oneOf:
+      - $ref: ./GolfSummaryMatchPlay.yaml
+      - type: 'null'
+  teamCompetition:
+    oneOf:
+      - $ref: ./GolfSummaryTeamComp.yaml
+      - type: 'null'
+  result:
+    oneOf:
+      - $ref: ./GolfSummaryResult.yaml
+      - type: 'null'

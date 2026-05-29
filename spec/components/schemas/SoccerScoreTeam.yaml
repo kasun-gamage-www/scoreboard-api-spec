@@ -1,0 +1,31 @@
+type: object
+required:
+  - name
+properties:
+  name:
+    type: string
+  goals:
+    type: integer
+    default: 0
+  shots:
+    type: integer
+    default: 0
+  shotsOnTarget:
+    type: integer
+    default: 0
+  possession:
+    type: integer
+    default: 0
+    description: Percent (0-100).
+  corners:
+    type: integer
+    default: 0
+  fouls:
+    type: integer
+    default: 0
+  yellowCards:
+    type: integer
+    default: 0
+  redCards:
+    type: integer
+    default: 0

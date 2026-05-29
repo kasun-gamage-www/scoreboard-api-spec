@@ -1,0 +1,46 @@
+type: object
+description: Cricket summary card.
+required:
+  - slug
+  - sport
+  - status
+  - homeTeam
+  - awayTeam
+properties:
+  slug:
+    type: string
+  embedSlug:
+    type: string
+  sport:
+    type: string
+  tournament:
+    type: string
+  tournamentLabel:
+    type: string
+    description: Short code top-right; falls back to tournament.
+  status:
+    type: string
+    enum:
+      - UPCOMING
+      - LIVE
+      - RESULT
+    description: Must agree with presence of `result`.
+  startTime:
+    type: string
+    format: date-time
+  venue:
+    type: string
+  venueLabel:
+    type: string
+    description: Optional pre-uppercased display string.
+  cricketFormat:
+    $ref: ./CricketFormat.yaml
+  homeTeam:
+    $ref: ./CricketSummaryTeam.yaml
+  awayTeam:
+    $ref: ./CricketSummaryTeam.yaml
+  result:
+    oneOf:
+      - $ref: ./CricketSummaryResult.yaml
+      - type: 'null'
+    description: Omit/null unless status is RESULT.

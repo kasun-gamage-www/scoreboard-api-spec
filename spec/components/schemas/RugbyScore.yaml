@@ -1,0 +1,43 @@
+type: object
+description: Deprecated legacy rugby-score record.
+properties:
+  id:
+    type: string
+  matchTitle:
+    type: string
+  team1:
+    $ref: ./RugbyScoreTeam.yaml
+  team2:
+    $ref: ./RugbyScoreTeam.yaml
+  status:
+    type: string
+    enum:
+      - upcoming
+      - live
+      - completed
+  venue:
+    type:
+      - string
+      - 'null'
+  matchDate:
+    type:
+      - string
+      - 'null'
+    format: date-time
+  matchType:
+    type: string
+    enum:
+      - Test
+      - Sevens
+      - Tens
+      - League
+      - Union
+      - Other
+  result:
+    type:
+      - string
+      - 'null'
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

@@ -1,0 +1,15 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Cricket Display
+  operationId: cricketLive
+  summary: Lightweight live cricket score (poll/SSE)
+  description: 'Should set `Cache-Control: no-store`.'
+  responses:
+    '200':
+      description: Live cricket score.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CricketLive.yaml

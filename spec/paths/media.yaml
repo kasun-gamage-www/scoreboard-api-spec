@@ -1,0 +1,29 @@
+delete:
+  tags:
+    - Media
+  operationId: mediaDelete
+  summary: Delete an uploaded object by key
+  description: >-
+    Admin-only. The backend MUST reject any `key` outside the `scoreboard/`
+    prefix with 400, preventing deletion of arbitrary bucket objects.
+  security:
+    - accessToken: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/MediaDeleteRequest.yaml
+  responses:
+    '204':
+      description: Deleted.
+    '400':
+      description: Key outside the `scoreboard/` prefix.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: Key outside scoreboard/ prefix
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml

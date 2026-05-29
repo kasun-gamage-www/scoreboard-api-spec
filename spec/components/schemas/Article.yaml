@@ -1,0 +1,47 @@
+type: object
+required:
+  - slug
+  - title
+  - author
+  - content
+  - category
+  - sport
+  - status
+  - createdAt
+  - updatedAt
+properties:
+  slug:
+    type: string
+  title:
+    type: string
+  author:
+    type: string
+  content:
+    type: string
+    description: HTML body.
+  category:
+    $ref: ./ArticleCategory.yaml
+  sport:
+    $ref: ./SportBasic.yaml
+  status:
+    $ref: ./ArticleStatus.yaml
+  summary:
+    type:
+      - string
+      - 'null'
+  imageUrl:
+    type:
+      - string
+      - 'null'
+    description: Public URL from /articles/upload.
+  imageYAlignment:
+    $ref: ./ImageYAlignment.yaml
+  imageYOffset:
+    type:
+      - number
+      - 'null'
+    description: Pixel offset from top; non-null only when imageYAlignment is `custom`.
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

@@ -1,0 +1,27 @@
+type: object
+required:
+  - kind
+properties:
+  kind:
+    type: string
+    enum:
+      - event
+  minute:
+    type: string
+  badge:
+    type: string
+    enum:
+      - try
+      - conversion
+      - penalty
+      - drop
+      - yellow
+      - red
+      - pending
+  badgeLabel:
+    type: string
+    description: '''e.g. TRY | C | P | DG.'''
+  description:
+    type: string
+  isScoring:
+    type: boolean

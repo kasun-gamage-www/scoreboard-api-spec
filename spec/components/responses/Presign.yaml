@@ -1,0 +1,5 @@
+description: Presigned upload details (folder fixed by the alias).
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/PresignResponse.yaml

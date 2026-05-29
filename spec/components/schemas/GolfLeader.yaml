@@ -1,0 +1,18 @@
+type: object
+properties:
+  rank:
+    type: integer
+  name:
+    type: string
+  country:
+    type: string
+    description: ISO 3-letter code.
+  total:
+    type: integer
+    description: Strokes vs par (0 = even, negative = under).
+  today:
+    type: integer
+  thru:
+    $ref: ./GolfThru.yaml
+  strokes:
+    type: integer

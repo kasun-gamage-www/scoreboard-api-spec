@@ -1,0 +1,91 @@
+type: object
+description: >-
+  Full scorecard page. startTime/matchDate/lastUpdated and innings[].from/to are
+  pre-formatted display strings rendered verbatim. videoEmbedUrl must be empty
+  or a youtube.com / player.vimeo.com URL.
+required:
+  - slug
+properties:
+  slug:
+    type: string
+  tournament:
+    type: string
+  seriesName:
+    type: string
+  status:
+    type: string
+    enum:
+      - Past
+      - Live
+      - Upcoming
+  stage:
+    type: string
+  venue:
+    type: string
+  city:
+    type: string
+  location:
+    type: string
+    description: Display string.
+  overs:
+    type: string
+    description: Format used per innings.
+  startTime:
+    type: string
+    description: Display string (already formatted).
+  matchDate:
+    type: string
+    description: Display string.
+  homeTeam:
+    $ref: ./CricketTeamScore.yaml
+  awayTeam:
+    $ref: ./CricketTeamScore.yaml
+  toss:
+    type: string
+  result:
+    type: string
+    description: Empty string allowed.
+  topBatters:
+    type: array
+    items:
+      $ref: ./CricketBatter.yaml
+  topBowlers:
+    type: array
+    items:
+      $ref: ./CricketBowler.yaml
+  scorecardInnings:
+    type: array
+    items:
+      $ref: ./ScorecardInnings.yaml
+  commentary:
+    type: array
+    items:
+      $ref: ./CommentaryInnings.yaml
+  analysis:
+    $ref: ./MatchAnalysis.yaml
+  heroes:
+    $ref: ./MatchHeroes.yaml
+  mvp:
+    type: array
+    items:
+      $ref: ./MvpPlayer.yaml
+  videoEmbedUrl:
+    type: string
+    description: Empty string when no video; else youtube/vimeo host only.
+  streamTitle:
+    type: string
+  rightsHolder:
+    type: string
+  totalViews:
+    type: integer
+  liveViewers:
+    type: integer
+  innings:
+    type: array
+    items:
+      $ref: ./CricketInningsTiming.yaml
+  lastUpdated:
+    type: string
+    description: Display string.
+  lastUpdatedBy:
+    type: string

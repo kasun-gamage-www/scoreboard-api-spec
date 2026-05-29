@@ -1,0 +1,14 @@
+get:
+  tags:
+    - Matches
+  operationId: matchFeaturedGet
+  summary: Get the currently featured match
+  responses:
+    '200':
+      description: The featured match, or null when none is featured.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/Match.yaml
+              - type: 'null'

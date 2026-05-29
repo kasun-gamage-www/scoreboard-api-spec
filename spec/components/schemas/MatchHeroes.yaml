@@ -1,0 +1,8 @@
+type: object
+properties:
+  playerOfMatch:
+    $ref: ./HeroPlayer.yaml
+  bestBatter:
+    $ref: ./HeroPlayer.yaml
+  bestBowler:
+    $ref: ./HeroPlayer.yaml

@@ -1,0 +1,13 @@
+type: object
+description: Timing row for a match period (half, halftime, extra time, etc.).
+properties:
+  label:
+    type: string
+    description: '''e.g. "1st Half", "Halftime", "Extra Time".'''
+  durationMins:
+    type: integer
+  from:
+    type: string
+    description: Pre-formatted display string.
+  to:
+    type: string

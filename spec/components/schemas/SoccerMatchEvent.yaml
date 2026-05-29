@@ -1,0 +1,34 @@
+type: object
+description: >-
+  Match timeline entry. Fields present depend on `kind` (goal/yellow/red/sub/
+  fulltime/penalty-shootout).
+properties:
+  minute:
+    type: string
+    description: '''e.g. "45+2", "PEN".'''
+  kind:
+    type: string
+    enum:
+      - goal
+      - yellow
+      - red
+      - sub
+      - fulltime
+      - penalty-shootout
+  team:
+    type: string
+  player:
+    type: string
+  assist:
+    type: string
+  description:
+    type: string
+  playerOff:
+    type: string
+    description: Substitutions only.
+  playerOn:
+    type: string
+    description: Substitutions only.
+  score:
+    type: string
+    description: Present on fulltime / penalty-shootout.

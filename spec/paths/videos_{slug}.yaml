@@ -1,0 +1,44 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Videos
+  operationId: videoGet
+  summary: Fetch a video by slug
+  responses:
+    '200':
+      description: The video.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Video.yaml
+    '404':
+      $ref: ../components/responses/NotFoundVideo.yaml
+put:
+  tags:
+    - Videos
+  operationId: videoReplace
+  summary: Full replacement of a video
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/VideoInput.yaml
+  responses:
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Video.yaml
+    '404':
+      $ref: ../components/responses/NotFoundVideo.yaml
+delete:
+  tags:
+    - Videos
+  operationId: videoDelete
+  summary: Delete a video
+  responses:
+    '204':
+      description: Deleted.

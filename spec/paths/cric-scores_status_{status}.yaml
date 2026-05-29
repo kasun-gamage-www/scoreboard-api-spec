@@ -1,0 +1,25 @@
+get:
+  tags:
+    - Cricket Legacy
+  operationId: cricScoresByStatus
+  deprecated: true
+  summary: '[Deprecated] List legacy cric-scores by status'
+  parameters:
+    - name: status
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - upcoming
+          - live
+          - completed
+  responses:
+    '200':
+      description: Legacy scores with the given status.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/CricScore.yaml

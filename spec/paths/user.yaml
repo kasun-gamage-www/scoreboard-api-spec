@@ -1,0 +1,18 @@
+get:
+  tags:
+    - Users
+  operationId: userList
+  summary: List users
+  description: >-
+    Returns all users, newest first. `passHash` is stripped from the response.
+    Reachable with and without the `/api` prefix. Not protected in the current
+    implementation — SHOULD be locked behind `x-access-token` in production.
+  responses:
+    '200':
+      description: Users (newest first).
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/User.yaml

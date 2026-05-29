@@ -1,0 +1,32 @@
+get:
+  tags:
+    - Photos
+  operationId: photosList
+  summary: List photos (DRAFT excluded from public lists)
+  responses:
+    '200':
+      description: Photos.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Photo.yaml
+post:
+  tags:
+    - Photos
+  operationId: photoCreate
+  summary: Create a photo
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/PhotoInput.yaml
+  responses:
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Photo.yaml

@@ -1,0 +1,42 @@
+type: object
+properties:
+  slug:
+    type: string
+  status:
+    type: string
+    example: LIVE
+  homeTeam:
+    $ref: ./CricketLiveTeam.yaml
+  awayTeam:
+    $ref: ./CricketLiveTeam.yaml
+  target:
+    type:
+      - integer
+      - 'null'
+    description: Null in 1st innings.
+  required:
+    oneOf:
+      - type: object
+        properties:
+          runs:
+            type: integer
+          balls:
+            type: integer
+          runRate:
+            type: number
+      - type: 'null'
+    description: Null in 1st innings.
+  currentBatters:
+    type: array
+    items:
+      $ref: ./CricketLiveBatter.yaml
+  currentBowler:
+    $ref: ./CricketLiveBowler.yaml
+  lastBalls:
+    type: array
+    description: Most recent over, newest right.
+    items:
+      type: string
+  lastUpdated:
+    type: string
+    format: date-time

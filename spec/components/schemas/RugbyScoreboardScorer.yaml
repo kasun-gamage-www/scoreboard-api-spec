@@ -1,0 +1,16 @@
+type: object
+properties:
+  order:
+    type: integer
+  name:
+    type: string
+  tries:
+    type: integer
+  conversions:
+    type: integer
+  penalties:
+    type: integer
+  dropGoals:
+    type: integer
+  points:
+    type: integer

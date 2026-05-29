@@ -1,0 +1,32 @@
+get:
+  tags:
+    - Other Events
+  operationId: otherEventsList
+  summary: List all other events
+  responses:
+    '200':
+      description: All other events.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/OtherEvent.yaml
+post:
+  tags:
+    - Other Events
+  operationId: otherEventCreate
+  summary: Create an other event
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/OtherEventInput.yaml
+  responses:
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/OtherEvent.yaml

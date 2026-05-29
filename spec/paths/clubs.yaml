@@ -1,0 +1,32 @@
+get:
+  tags:
+    - Clubs
+  operationId: clubsList
+  summary: List all clubs
+  responses:
+    '200':
+      description: All clubs.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Club.yaml
+post:
+  tags:
+    - Clubs
+  operationId: clubCreate
+  summary: Create a club
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/ClubInput.yaml
+  responses:
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Club.yaml

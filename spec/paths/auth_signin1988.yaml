@@ -1,0 +1,39 @@
+post:
+  tags:
+    - Auth
+  operationId: authSignin
+  summary: Exchange username + password for a JWT
+  description: >-
+    The obfuscated suffix `1988` is part of the canonical path and MUST NOT be
+    normalised away; `/auth/signin` SHOULD return 404. The backend MUST return
+    the same 401 shape whether the username is unknown or the password is wrong,
+    to avoid leaking account existence.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/SigninRequest.yaml
+  responses:
+    '200':
+      description: Authenticated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/SigninResponse.yaml
+    '400':
+      description: Missing credentials.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: Missing credentials
+    '401':
+      description: Invalid credentials (identical shape regardless of cause).
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: Invalid credentials

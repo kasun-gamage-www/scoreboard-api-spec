@@ -1,0 +1,15 @@
+type: object
+properties:
+  points:
+    type: integer
+  tries:
+    type: integer
+  conversions:
+    type: integer
+  penalties:
+    type: integer
+  dropGoals:
+    type: integer
+  label:
+    type: string
+    description: '''e.g. "1st Half".'''

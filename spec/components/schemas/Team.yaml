@@ -1,0 +1,38 @@
+type: object
+required:
+  - slug
+  - name
+  - sport
+  - status
+  - createdAt
+  - updatedAt
+properties:
+  slug:
+    type: string
+  name:
+    type: string
+  sport:
+    $ref: ./SportWithOther.yaml
+  status:
+    $ref: ./TeamStatus.yaml
+  description:
+    type:
+      - string
+      - 'null'
+  country:
+    type:
+      - string
+      - 'null'
+  city:
+    type:
+      - string
+      - 'null'
+  logoUrl:
+    type:
+      - string
+      - 'null'
+    description: Public URL from /teams/upload.
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

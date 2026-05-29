@@ -1,0 +1,326 @@
+openapi: 3.1.0
+info:
+  title: Scoreboard API
+  version: 1.0.0
+  summary: Unified API for the Scoreboard sports platform (admin CMS + public site).
+  description: >
+    Consolidated OpenAPI specification for the Scoreboard platform, derived from
+    the
+
+    per-resource markdown specs under `Legacy/`. It covers content management
+
+    (articles, clubs, players, teams, tournaments, venues, photos, videos,
+    sponsors,
+
+    other events), the generic `/matches` resource, sport-specific read surfaces
+
+    (cricket, rugby, soccer & golf), polls, authentication, and the S3
+    media-presign
+
+    contract.
+
+
+    ## Per-sport read surfaces
+
+    Cricket, rugby and soccer each expose a public read family. Cricket reuses
+    the
+
+    shared `/match/list-match` and `/match/past-featured` endpoints; rugby and
+    soccer
+
+    use sport-namespaced equivalents (`/match/list-rugby`,
+    `/match/rugby/past-featured`,
+
+    etc.). Golf is specified but not yet implemented in the server. There are
+    also
+
+    deprecated `/api`-only legacy score families per sport (`/cric-scores`,
+
+    `/rugby-scores`, `/soccer-scores`).
+
+
+    ## Base URL & the `/api` prefix
+
+    The base URL is configured via the `API_BASE_URI` environment variable
+
+    (example: `http://localhost:8081/api`). Endpoints are written here as bare
+
+    resource paths (e.g. `/matches`) which compose onto the base URL.
+
+
+    Every route is reachable **both with and without** an `/api` prefix
+
+    (`/matches` ≡ `/api/matches`) — **except** the deprecated `/cric-scores`
+
+    family, which is served **only** under the `/api` prefix and is not mirrored
+
+    at the host root.
+
+
+    ## Authentication
+
+    Protected endpoints require a JWT sent in the **`x-access-token`** header
+
+    (NOT `Authorization: Bearer …`). The token is issued by `POST
+    /auth/signin1988`
+
+    and `POST /auth/signup351`.
+
+
+    Today, only media-presign / delete and the per-resource `/<resource>/upload`
+
+    aliases (plus `POST /matches/upload-schedule`) are enforced in code.
+    Resource
+
+    CRUD is **not** protected in the current implementation — this is documented
+    as
+
+    an existing gap, not the intended long-term contract, and such routes SHOULD
+    be
+
+    locked behind `x-access-token` in production.
+
+
+    ## Slugs
+
+    Most resources are addressed by a backend-generated URL-friendly `slug`
+
+    (not a numeric id). Sponsors are the exception and use an opaque `id`.
+
+    Polls use a stable `id` (uuid or slug).
+
+
+    ## Media flow (presign)
+
+    Image/video assets are uploaded **directly browser → S3** via a short-lived
+
+    presigned `PUT`. The API only signs the URL; file bytes never traverse the
+    API
+
+    server. Every presign response carries two URLs on different hosts:
+    `uploadUrl`
+
+    (the S3 PUT target) and `url` (the canonical public/CDN URL to persist on
+    the
+
+    resource).
+
+
+    ## Error format
+
+    All non-2xx responses use the project-wide error shape:
+
+    `{ "error": "human-readable message", "code": "OPTIONAL_MACHINE_CODE" }`.
+  contact:
+    name: Scoreboard Platform
+  license:
+    name: Proprietary
+servers:
+  - url: '{API_BASE_URI}'
+    description: Configurable API base. Default matches the local dev convention.
+    variables:
+      API_BASE_URI:
+        default: http://localhost:8081/api
+        description: >-
+          Root of the API. May or may not include a trailing `/api` segment. All
+          documented paths are reachable with and without an `/api` prefix
+          except the deprecated `/cric-scores` family (which is `/api`-only).
+tags:
+  - name: Auth
+    description: Sign-in / sign-up. Issues the `x-access-token` JWT.
+  - name: Media
+    description: S3 presign / delete contract and per-resource upload aliases.
+  - name: Articles
+    description: Editorial articles (news, match reports, features).
+  - name: Clubs
+    description: Sporting clubs.
+  - name: Players
+    description: Players (also created inline from the match form).
+  - name: Teams
+    description: Teams.
+  - name: Tournaments
+    description: Tournaments / competitions. Source of cricket-format inheritance.
+  - name: Venues
+    description: Venues (UAE-aware via the `emirate` enum).
+  - name: Photos
+    description: Public photo gallery entries.
+  - name: Videos
+    description: Videos (YouTube id or hosted file via `source`).
+  - name: Sponsors
+    description: Lean sponsor list (id-addressed; list/create/delete only).
+  - name: Other Events
+    description: Non-match calendar items (training, ceremonies, etc.).
+  - name: Matches
+    description: Generic cross-sport match resource (CRUD, featured flag, bulk import).
+  - name: Polls
+    description: Public reader polls + admin authoring.
+  - name: Cricket Display
+    description: Public read surfaces for cricket pages.
+  - name: Golf Display
+    description: Public read surfaces for golf pages.
+  - name: Match Display (shared)
+    description: Cross-sport public read surfaces (schedule, featured carousel).
+  - name: Cricket Legacy
+    description: Deprecated `/api/cric-scores` routes. Do not build new code against these.
+  - name: Rugby Display
+    description: Public read surfaces for rugby pages.
+  - name: Soccer Display
+    description: Public read surfaces for soccer pages.
+  - name: Rugby Legacy
+    description: >-
+      Deprecated `/api/rugby-scores` routes. Do not build new code against
+      these.
+  - name: Soccer Legacy
+    description: >-
+      Deprecated `/api/soccer-scores` routes. Do not build new code against
+      these.
+  - name: Users
+    description: User directory (admin list).
+paths:
+  /auth/signin1988:
+    $ref: paths/auth_signin1988.yaml
+  /auth/signup351:
+    $ref: paths/auth_signup351.yaml
+  /user:
+    $ref: paths/user.yaml
+  /media/presign:
+    $ref: paths/media_presign.yaml
+  /media:
+    $ref: paths/media.yaml
+  /articles/upload:
+    $ref: paths/articles_upload.yaml
+  /clubs/upload:
+    $ref: paths/clubs_upload.yaml
+  /photos/upload:
+    $ref: paths/photos_upload.yaml
+  /players/upload:
+    $ref: paths/players_upload.yaml
+  /sponsors/upload:
+    $ref: paths/sponsors_upload.yaml
+  /teams/upload:
+    $ref: paths/teams_upload.yaml
+  /tournaments/upload:
+    $ref: paths/tournaments_upload.yaml
+  /venues/upload:
+    $ref: paths/venues_upload.yaml
+  /videos/upload:
+    $ref: paths/videos_upload.yaml
+  /articles:
+    $ref: paths/articles.yaml
+  /articles/popular:
+    $ref: paths/articles_popular.yaml
+  /articles/{slug}:
+    $ref: paths/articles_{slug}.yaml
+  /clubs:
+    $ref: paths/clubs.yaml
+  /clubs/{slug}:
+    $ref: paths/clubs_{slug}.yaml
+  /players:
+    $ref: paths/players.yaml
+  /players/{slug}:
+    $ref: paths/players_{slug}.yaml
+  /teams:
+    $ref: paths/teams.yaml
+  /teams/{slug}:
+    $ref: paths/teams_{slug}.yaml
+  /tournaments:
+    $ref: paths/tournaments.yaml
+  /tournaments/{slug}:
+    $ref: paths/tournaments_{slug}.yaml
+  /venues:
+    $ref: paths/venues.yaml
+  /venues/{slug}:
+    $ref: paths/venues_{slug}.yaml
+  /photos:
+    $ref: paths/photos.yaml
+  /photos/{slug}:
+    $ref: paths/photos_{slug}.yaml
+  /videos:
+    $ref: paths/videos.yaml
+  /videos/{slug}:
+    $ref: paths/videos_{slug}.yaml
+  /sponsors:
+    $ref: paths/sponsors.yaml
+  /sponsors/{id}:
+    $ref: paths/sponsors_{id}.yaml
+  /other-events:
+    $ref: paths/other-events.yaml
+  /other-events/{slug}:
+    $ref: paths/other-events_{slug}.yaml
+  /matches:
+    $ref: paths/matches.yaml
+  /matches/featured:
+    $ref: paths/matches_featured.yaml
+  /matches/{slug}:
+    $ref: paths/matches_{slug}.yaml
+  /matches/{slug}/featured:
+    $ref: paths/matches_{slug}_featured.yaml
+  /matches/upload-schedule:
+    $ref: paths/matches_upload-schedule.yaml
+  /polls:
+    $ref: paths/polls.yaml
+  /polls/{id}:
+    $ref: paths/polls_{id}.yaml
+  /polls/{id}/vote:
+    $ref: paths/polls_{id}_vote.yaml
+  /match/list-match:
+    $ref: paths/match_list-match.yaml
+  /match/past-featured:
+    $ref: paths/match_past-featured.yaml
+  /match/cricket/summaries:
+    $ref: paths/match_cricket_summaries.yaml
+  /match/cricket/{slug}:
+    $ref: paths/match_cricket_{slug}.yaml
+  /match/cricket/{slug}/live:
+    $ref: paths/match_cricket_{slug}_live.yaml
+  /match/list-rugby:
+    $ref: paths/match_list-rugby.yaml
+  /match/rugby/past-featured:
+    $ref: paths/match_rugby_past-featured.yaml
+  /match/rugby/summaries:
+    $ref: paths/match_rugby_summaries.yaml
+  /match/rugby/{slug}:
+    $ref: paths/match_rugby_{slug}.yaml
+  /match/rugby/{slug}/live:
+    $ref: paths/match_rugby_{slug}_live.yaml
+  /match/list-soccer:
+    $ref: paths/match_list-soccer.yaml
+  /match/soccer/past-featured:
+    $ref: paths/match_soccer_past-featured.yaml
+  /match/soccer/summaries:
+    $ref: paths/match_soccer_summaries.yaml
+  /match/soccer/{slug}:
+    $ref: paths/match_soccer_{slug}.yaml
+  /match/soccer/{slug}/live:
+    $ref: paths/match_soccer_{slug}_live.yaml
+  /match/golf/summaries:
+    $ref: paths/match_golf_summaries.yaml
+  /match/golf/{slug}:
+    $ref: paths/match_golf_{slug}.yaml
+  /match/golf/{slug}/live:
+    $ref: paths/match_golf_{slug}_live.yaml
+  /cric-scores:
+    $ref: paths/cric-scores.yaml
+  /cric-scores/status/{status}:
+    $ref: paths/cric-scores_status_{status}.yaml
+  /cric-scores/{id}:
+    $ref: paths/cric-scores_{id}.yaml
+  /rugby-scores:
+    $ref: paths/rugby-scores.yaml
+  /rugby-scores/status/{status}:
+    $ref: paths/rugby-scores_status_{status}.yaml
+  /rugby-scores/{id}:
+    $ref: paths/rugby-scores_{id}.yaml
+  /soccer-scores:
+    $ref: paths/soccer-scores.yaml
+  /soccer-scores/status/{status}:
+    $ref: paths/soccer-scores_status_{status}.yaml
+  /soccer-scores/{id}:
+    $ref: paths/soccer-scores_{id}.yaml
+components:
+  securitySchemes:
+    accessToken:
+      type: apiKey
+      in: header
+      name: x-access-token
+      description: JWT issued by the auth endpoints. Sent verbatim (not as a Bearer token).

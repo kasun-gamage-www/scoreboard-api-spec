@@ -1,0 +1,91 @@
+type: object
+description: >-
+  Full rugby match page. startTime/matchDate/lastUpdated and halves[].from/to
+  are pre-formatted display strings rendered verbatim.
+required:
+  - slug
+properties:
+  slug:
+    type: string
+  sport:
+    type: string
+  tournament:
+    type: string
+  seriesName:
+    type: string
+  status:
+    type: string
+    enum:
+      - Past
+      - Live
+      - Upcoming
+  stage:
+    type: string
+  venue:
+    type: string
+  city:
+    type: string
+  location:
+    type: string
+  duration:
+    type: string
+    description: '''e.g. "80 Min".'''
+  startTime:
+    type: string
+    description: Display string.
+  matchDate:
+    type: string
+    description: Display string.
+  homeTeam:
+    $ref: ./RugbyTeamScore.yaml
+  awayTeam:
+    $ref: ./RugbyTeamScore.yaml
+  toss:
+    type: string
+  result:
+    type: string
+    description: Empty string allowed.
+  topScorers:
+    type: array
+    items:
+      $ref: ./RugbyScorerStat.yaml
+  topTacklers:
+    type: array
+    items:
+      $ref: ./RugbyTacklerStat.yaml
+  scorecardHalves:
+    type: array
+    items:
+      $ref: ./RugbyScorecardHalf.yaml
+  commentary:
+    type: array
+    items:
+      $ref: ./RugbyCommentaryGroup.yaml
+  analysis:
+    $ref: ./RugbyMatchAnalysis.yaml
+  heroes:
+    $ref: ./RugbyMatchHeroes.yaml
+  mvp:
+    type: array
+    items:
+      $ref: ./RugbyMvpPlayer.yaml
+  videoEmbedUrl:
+    type: string
+    description: Empty string when no video; else youtube/vimeo host only.
+  streamTitle:
+    type: string
+  rightsHolder:
+    type: string
+  totalViews:
+    type: integer
+  liveViewers:
+    type: integer
+  halves:
+    type: array
+    items:
+      $ref: ./PeriodTiming.yaml
+  lastUpdated:
+    type: string
+    description: Display string.
+  lastUpdatedBy:
+    type: string

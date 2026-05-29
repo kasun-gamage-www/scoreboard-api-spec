@@ -1,0 +1,35 @@
+get:
+  tags:
+    - Match Display (shared)
+  operationId: matchPastFeatured
+  summary: Recent featured cricket scorecards (carousel + ticker)
+  description: >-
+    The cricket past-featured carousel feed. Returns compact, cricket-shaped
+    `FeaturedMatchSummary` items. Rugby and soccer expose their own
+    `/match/rugby/past-featured` and `/match/soccer/past-featured` endpoints
+    (golf is specified but not yet implemented). Cacheable (`shareReplay(1)` on
+    the client).
+  parameters:
+    - name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 10
+    - name: sport
+      in: query
+      required: false
+      description: e.g. GOLF. When omitted, mixes sports.
+      schema:
+        type: string
+  responses:
+    '200':
+      description: Featured summaries.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              oneOf:
+                - $ref: ../components/schemas/FeaturedMatchSummary.yaml
+                - $ref: ../components/schemas/FeaturedGolfSummary.yaml

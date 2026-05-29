@@ -1,0 +1,43 @@
+type: object
+description: Deprecated legacy soccer-score record.
+properties:
+  id:
+    type: string
+  matchTitle:
+    type: string
+  team1:
+    $ref: ./SoccerScoreTeam.yaml
+  team2:
+    $ref: ./SoccerScoreTeam.yaml
+  status:
+    type: string
+    enum:
+      - upcoming
+      - live
+      - completed
+  venue:
+    type:
+      - string
+      - 'null'
+  matchDate:
+    type:
+      - string
+      - 'null'
+    format: date-time
+  matchType:
+    type: string
+    enum:
+      - League
+      - Cup
+      - Friendly
+      - International
+      - Knockout
+      - Other
+  result:
+    type:
+      - string
+      - 'null'
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

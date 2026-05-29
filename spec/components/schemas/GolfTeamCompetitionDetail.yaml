@@ -1,0 +1,23 @@
+type: object
+properties:
+  homeTeam:
+    type: string
+  awayTeam:
+    type: string
+  homeTeamPoints:
+    type: number
+    description: Halves count as 0.5.
+  awayTeamPoints:
+    type: number
+  totalPoints:
+    type: number
+  winningPoints:
+    type: number
+    description: Points needed to win.
+  resultLabel:
+    type: string
+    description: Empty while in progress.
+  sessions:
+    type: array
+    items:
+      $ref: ./GolfSession.yaml

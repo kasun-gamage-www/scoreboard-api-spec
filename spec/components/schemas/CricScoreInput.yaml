@@ -1,0 +1,40 @@
+type: object
+required:
+  - matchTitle
+  - team1
+  - team2
+  - status
+  - matchType
+properties:
+  matchTitle:
+    type: string
+  team1:
+    $ref: ./CricScoreTeam.yaml
+  team2:
+    $ref: ./CricScoreTeam.yaml
+  status:
+    type: string
+    enum:
+      - upcoming
+      - live
+      - completed
+  venue:
+    type:
+      - string
+      - 'null'
+  matchDate:
+    type:
+      - string
+      - 'null'
+    format: date-time
+  matchType:
+    type: string
+    enum:
+      - ODI
+      - T20
+      - Test
+      - Other
+  result:
+    type:
+      - string
+      - 'null'

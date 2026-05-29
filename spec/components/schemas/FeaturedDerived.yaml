@@ -1,0 +1,19 @@
+type: object
+properties:
+  resultKind:
+    type: string
+    enum:
+      - WIN
+      - DRAW
+      - TIE
+      - NO_RESULT
+    description: Defaults to WIN when omitted and a winner is set.
+  wonBy:
+    type: string
+    description: Human-readable margin; omit/empty when resultKind != WIN.
+  label:
+    type: string
+    description: Optional pre-formatted result line; takes precedence over winner+wonBy.
+  comment:
+    type: string
+    description: '''e.g. "All Out", "10 balls remaining".'''

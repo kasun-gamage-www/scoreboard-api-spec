@@ -1,0 +1,15 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Soccer Display
+  operationId: soccerLive
+  summary: Lightweight live soccer score (poll/SSE)
+  description: 'Should set `Cache-Control: no-store`.'
+  responses:
+    '200':
+      description: Live soccer score.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/SoccerLive.yaml

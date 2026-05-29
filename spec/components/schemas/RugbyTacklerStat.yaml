@@ -1,0 +1,12 @@
+type: object
+properties:
+  name:
+    type: string
+  team:
+    type: string
+  tackles:
+    type: integer
+  missed:
+    type: integer
+  turnovers:
+    type: integer

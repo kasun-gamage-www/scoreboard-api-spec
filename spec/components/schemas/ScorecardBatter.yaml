@@ -1,0 +1,25 @@
+type: object
+properties:
+  name:
+    type: string
+  captain:
+    type: boolean
+    default: false
+  keeper:
+    type: boolean
+    default: false
+  dismissal:
+    type: string
+    description: '''e.g. "run out (Safni)" or "not out".'''
+  runs:
+    type: integer
+  balls:
+    type: integer
+  fours:
+    type: integer
+  sixes:
+    type: integer
+  strikeRate:
+    type: number
+  minutes:
+    type: integer

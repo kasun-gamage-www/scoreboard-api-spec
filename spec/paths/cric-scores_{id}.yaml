@@ -1,0 +1,55 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      type: string
+get:
+  tags:
+    - Cricket Legacy
+  operationId: cricScoreGet
+  deprecated: true
+  summary: '[Deprecated] Fetch a legacy cric-score by id'
+  responses:
+    '200':
+      description: Legacy score.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CricScore.yaml
+put:
+  tags:
+    - Cricket Legacy
+  operationId: cricScoreReplace
+  deprecated: true
+  summary: '[Deprecated] Replace a legacy cric-score'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CricScoreInput.yaml
+  responses:
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CricScore.yaml
+delete:
+  tags:
+    - Cricket Legacy
+  operationId: cricScoreDelete
+  deprecated: true
+  summary: '[Deprecated] Delete a legacy cric-score'
+  responses:
+    '200':
+      description: Deleted.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: Score deleted

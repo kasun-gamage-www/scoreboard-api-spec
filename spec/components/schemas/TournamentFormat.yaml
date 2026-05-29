@@ -1,0 +1,6 @@
+type: string
+enum:
+  - LEAGUE
+  - KNOCKOUT
+  - GROUP_STAGE
+  - ROUND_ROBIN

@@ -1,0 +1,8 @@
+oneOf:
+  - type: integer
+    minimum: 0
+    maximum: 18
+  - type: string
+    enum:
+      - F
+description: Holes completed in the current round (0..18) or "F" for finished.

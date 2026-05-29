@@ -1,0 +1,10 @@
+oneOf:
+  - $ref: ./CommentaryBall.yaml
+  - $ref: ./CommentaryNotification.yaml
+  - $ref: ./CommentaryOverEnd.yaml
+discriminator:
+  propertyName: kind
+  mapping:
+    ball: ./CommentaryBall.yaml
+    notification: ./CommentaryNotification.yaml
+    over-end: ./CommentaryOverEnd.yaml

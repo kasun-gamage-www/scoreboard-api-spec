@@ -1,0 +1,32 @@
+type: object
+properties:
+  teamName:
+    type: string
+  score:
+    type: string
+  overs:
+    type: string
+  batters:
+    type: array
+    items:
+      $ref: ./ScorecardBatter.yaml
+  extras:
+    type: object
+    properties:
+      total:
+        type: integer
+      breakdown:
+        type: string
+        description: '''e.g. "wd 6, lb 2, nb 1, b 1".'''
+  yetToBat:
+    type: array
+    items:
+      type: string
+  fallOfWickets:
+    type: array
+    items:
+      $ref: ./FallOfWicket.yaml
+  bowlers:
+    type: array
+    items:
+      $ref: ./ScorecardBowler.yaml

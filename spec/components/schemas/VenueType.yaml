@@ -1,0 +1,9 @@
+type: string
+enum:
+  - STADIUM
+  - ARENA
+  - GROUND
+  - INDOOR_COURT
+  - OUTDOOR_COURT
+  - CLUBHOUSE
+  - OTHER

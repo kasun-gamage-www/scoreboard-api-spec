@@ -1,0 +1,17 @@
+type: object
+properties:
+  teamName:
+    type: string
+  score:
+    type: string
+  breakdown:
+    type: string
+    description: '''e.g. "3T 3C 2P 0DG".'''
+  scorers:
+    type: array
+    items:
+      $ref: ./RugbyScorecardScorer.yaml
+  squad:
+    type: array
+    items:
+      type: string

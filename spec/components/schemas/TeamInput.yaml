@@ -1,0 +1,30 @@
+type: object
+required:
+  - name
+  - sport
+  - status
+properties:
+  name:
+    type: string
+  sport:
+    $ref: ./SportWithOther.yaml
+  status:
+    allOf:
+      - $ref: ./TeamStatus.yaml
+    default: ACTIVE
+  description:
+    type:
+      - string
+      - 'null'
+  country:
+    type:
+      - string
+      - 'null'
+  city:
+    type:
+      - string
+      - 'null'
+  logoUrl:
+    type:
+      - string
+      - 'null'

@@ -1,0 +1,7 @@
+type: string
+enum:
+  - NEWS
+  - MATCH_REPORT
+  - FEATURE
+  - INTERVIEW
+  - OPINION

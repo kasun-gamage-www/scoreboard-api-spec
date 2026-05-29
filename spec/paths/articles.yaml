@@ -1,0 +1,32 @@
+get:
+  tags:
+    - Articles
+  operationId: articlesList
+  summary: List all articles
+  responses:
+    '200':
+      description: All articles.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Article.yaml
+post:
+  tags:
+    - Articles
+  operationId: articleCreate
+  summary: Create an article
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/ArticleInput.yaml
+  responses:
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Article.yaml

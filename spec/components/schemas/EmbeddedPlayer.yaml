@@ -1,0 +1,21 @@
+type: object
+description: Match-scoped player entry. jerseyNumber/position are scoped to this match.
+required:
+  - name
+properties:
+  name:
+    type: string
+    description: Free-text player name, not necessarily a Player.slug.
+  jerseyNumber:
+    type:
+      - number
+      - 'null'
+  position:
+    type:
+      - string
+      - 'null'
+  playerId:
+    type:
+      - string
+      - 'null'
+    description: Optional FK to Player.slug.

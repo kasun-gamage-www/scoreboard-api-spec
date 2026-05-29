@@ -1,0 +1,23 @@
+type: object
+properties:
+  name:
+    type: string
+  sessionFormat:
+    type: string
+    enum:
+      - FOURSOMES
+      - FOURBALLS
+      - SINGLES
+  order:
+    type: integer
+    description: 1-based.
+  status:
+    type: string
+    enum:
+      - SCHEDULED
+      - LIVE
+      - COMPLETED
+  pairings:
+    type: array
+    items:
+      $ref: ./GolfPairing.yaml

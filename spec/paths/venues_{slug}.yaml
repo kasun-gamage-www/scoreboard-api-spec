@@ -1,0 +1,44 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Venues
+  operationId: venueGet
+  summary: Fetch a venue by slug
+  responses:
+    '200':
+      description: The venue.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Venue.yaml
+    '404':
+      $ref: ../components/responses/NotFoundVenue.yaml
+put:
+  tags:
+    - Venues
+  operationId: venueReplace
+  summary: Full replacement of a venue
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/VenueInput.yaml
+  responses:
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Venue.yaml
+    '404':
+      $ref: ../components/responses/NotFoundVenue.yaml
+delete:
+  tags:
+    - Venues
+  operationId: venueDelete
+  summary: Delete a venue
+  responses:
+    '204':
+      description: Deleted.

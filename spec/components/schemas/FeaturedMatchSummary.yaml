@@ -1,0 +1,35 @@
+type: object
+description: Cricket variant of the past-featured summary.
+required:
+  - slug
+  - sport
+properties:
+  embedSlug:
+    type: string
+  slug:
+    type: string
+    description: Canonical slug for match detail.
+  sport:
+    type: string
+    description: '''Sport code (e.g. "CRICKET"). Case-insensitive on the client.'''
+  cricketFormat:
+    allOf:
+      - $ref: ./CricketFormat.yaml
+    description: Optional; drives score formatting.
+  tournament:
+    type: string
+  homeTeam:
+    type: string
+  awayTeam:
+    type: string
+  startTime:
+    type: string
+    format: date-time
+  group:
+    type: string
+  venue:
+    type: string
+  derived:
+    $ref: ./FeaturedDerived.yaml
+  scoreboard:
+    $ref: ./CricketScoreboard.yaml

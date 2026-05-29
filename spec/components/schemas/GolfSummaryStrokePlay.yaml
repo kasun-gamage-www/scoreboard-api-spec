@@ -1,0 +1,28 @@
+type: object
+properties:
+  par:
+    type: integer
+  rounds:
+    type: integer
+  currentRound:
+    type: integer
+    description: 0 for upcoming.
+  leader:
+    oneOf:
+      - type: object
+        properties:
+          name:
+            type: string
+          country:
+            type: string
+          total:
+            type: integer
+          today:
+            type: integer
+          thru:
+            $ref: ./GolfThru.yaml
+      - type: 'null'
+    description: Null for upcoming.
+  fieldSize:
+    type: integer
+    description: Optional.

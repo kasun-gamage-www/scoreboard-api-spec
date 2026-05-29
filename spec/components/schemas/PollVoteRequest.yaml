@@ -1,0 +1,7 @@
+type: object
+required:
+  - optionId
+properties:
+  optionId:
+    type: string
+    description: Must match one of the poll's options[].id.

@@ -1,0 +1,16 @@
+type: object
+required:
+  - imported
+  - skipped
+  - errors
+properties:
+  imported:
+    type: integer
+    example: 12
+  skipped:
+    type: integer
+    example: 1
+  errors:
+    type: array
+    items:
+      $ref: ./ScheduleRowError.yaml

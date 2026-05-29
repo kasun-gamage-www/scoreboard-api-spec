@@ -1,0 +1,5 @@
+type: string
+enum:
+  - STROKE_PLAY
+  - MATCH_PLAY
+  - TEAM_COMPETITION

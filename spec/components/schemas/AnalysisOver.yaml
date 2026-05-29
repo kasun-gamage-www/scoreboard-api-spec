@@ -1,0 +1,11 @@
+type: object
+properties:
+  over:
+    type: integer
+  runs:
+    type: integer
+  wickets:
+    type: integer
+  runRate:
+    type: number
+    description: Cumulative runs/over up to and including this over.

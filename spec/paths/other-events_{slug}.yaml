@@ -1,0 +1,44 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Other Events
+  operationId: otherEventGet
+  summary: Fetch an other event by slug
+  responses:
+    '200':
+      description: The other event.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/OtherEvent.yaml
+    '404':
+      $ref: ../components/responses/NotFoundOtherEvent.yaml
+put:
+  tags:
+    - Other Events
+  operationId: otherEventReplace
+  summary: Full replacement of an other event
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/OtherEventInput.yaml
+  responses:
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/OtherEvent.yaml
+    '404':
+      $ref: ../components/responses/NotFoundOtherEvent.yaml
+delete:
+  tags:
+    - Other Events
+  operationId: otherEventDelete
+  summary: Delete an other event
+  responses:
+    '204':
+      description: Deleted.

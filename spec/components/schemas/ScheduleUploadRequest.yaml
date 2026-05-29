@@ -1,0 +1,11 @@
+type: object
+required:
+  - file
+properties:
+  tournamentSlug:
+    type: string
+    description: Optional. Associates all imported matches with this tournament.
+  file:
+    type: string
+    format: binary
+    description: CSV or Excel file (.csv, .xls, .xlsx).

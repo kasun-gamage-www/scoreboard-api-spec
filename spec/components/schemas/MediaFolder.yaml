@@ -1,0 +1,12 @@
+type: string
+enum:
+  - articles
+  - clubs
+  - general
+  - photos
+  - players
+  - sponsors
+  - teams
+  - tournaments
+  - venues
+  - videos

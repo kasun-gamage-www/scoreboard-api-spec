@@ -1,0 +1,36 @@
+get:
+  tags:
+    - Articles
+  operationId: articlesPopular
+  summary: Popular article feed
+  description: >-
+    Currently implemented as the most-recently-created PUBLISHED articles,
+    newest first (`createdAt DESC`). DRAFT and ARCHIVED are excluded. The
+    ranking will change when real popularity signals exist; the shape will not.
+  parameters:
+    - name: limit
+      in: query
+      required: false
+      description: 1..128. Values > 128 are clamped to 128; < 1 or non-integer → 400.
+      schema:
+        type: integer
+        default: 10
+        minimum: 1
+        maximum: 128
+  responses:
+    '200':
+      description: Up to `limit` published articles, newest first.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Article.yaml
+    '400':
+      description: Invalid limit.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: Invalid limit

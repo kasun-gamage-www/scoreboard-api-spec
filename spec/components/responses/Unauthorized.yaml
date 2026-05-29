@@ -1,0 +1,7 @@
+description: Missing or invalid `x-access-token`.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/Error.yaml
+    example:
+      error: Unauthorized

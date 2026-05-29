@@ -1,0 +1,9 @@
+type:
+  - string
+  - 'null'
+enum:
+  - LEAGUE
+  - KNOCKOUT
+  - FRIENDLY
+  - INDEPENDENT
+  - null

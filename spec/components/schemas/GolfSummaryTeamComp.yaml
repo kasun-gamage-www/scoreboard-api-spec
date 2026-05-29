@@ -1,0 +1,12 @@
+type: object
+properties:
+  homeTeam:
+    type: string
+  awayTeam:
+    type: string
+  homeTeamPoints:
+    type: number
+  awayTeamPoints:
+    type: number
+  totalPoints:
+    type: number

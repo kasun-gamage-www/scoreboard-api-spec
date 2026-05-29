@@ -1,0 +1,15 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Rugby Display
+  operationId: rugbyLive
+  summary: Lightweight live rugby score (poll/SSE)
+  description: 'Should set `Cache-Control: no-store`.'
+  responses:
+    '200':
+      description: Live rugby score.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/RugbyLive.yaml

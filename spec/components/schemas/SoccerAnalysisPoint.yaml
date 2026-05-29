@@ -1,0 +1,11 @@
+type: object
+properties:
+  minute:
+    type: integer
+  homeShots:
+    type: integer
+  awayShots:
+    type: integer
+  possessionHome:
+    type: integer
+    description: Home possession percent at this minute.

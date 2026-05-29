@@ -1,0 +1,5 @@
+type: string
+description: DRAFT is never returned on public endpoints.
+enum:
+  - ACTIVE
+  - CLOSED

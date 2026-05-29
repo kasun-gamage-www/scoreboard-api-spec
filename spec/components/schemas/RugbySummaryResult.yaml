@@ -1,0 +1,12 @@
+type: object
+properties:
+  kind:
+    type: string
+    enum:
+      - WIN
+      - DRAW
+      - TIE
+      - NO_RESULT
+  label:
+    type: string
+    description: Already cased for display.

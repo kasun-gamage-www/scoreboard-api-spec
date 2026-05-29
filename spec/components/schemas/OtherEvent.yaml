@@ -1,0 +1,46 @@
+type: object
+required:
+  - slug
+  - title
+  - eventType
+  - status
+  - createdAt
+  - updatedAt
+properties:
+  slug:
+    type: string
+  title:
+    type: string
+  eventType:
+    $ref: ./OtherEventType.yaml
+  status:
+    $ref: ./MatchStatus.yaml
+  sport:
+    $ref: ./OtherEventSport.yaml
+  tournamentSlug:
+    type:
+      - string
+      - 'null'
+    description: FK to Tournament.slug.
+  venue:
+    type:
+      - string
+      - 'null'
+    description: Free-text venue name, not a FK.
+  scheduledAt:
+    type:
+      - string
+      - 'null'
+    format: date-time
+  organizer:
+    type:
+      - string
+      - 'null'
+  description:
+    type:
+      - string
+      - 'null'
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

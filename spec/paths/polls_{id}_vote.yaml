@@ -1,0 +1,68 @@
+parameters:
+  - $ref: ../components/parameters/PollId.yaml
+post:
+  tags:
+    - Polls
+  operationId: pollVote
+  summary: Cast a vote on a poll
+  description: >-
+    Anonymous voting with best-effort dedupe (JWT > `voterId` cookie > IP+UA
+    hash). On the first vote without a cookie, the backend mints one and returns
+    it via `Set-Cookie: voterId=...; Max-Age=63072000; SameSite=Lax; HttpOnly;
+    Secure`. The increment + dedupe-record MUST be atomic. Changing your vote is
+    not supported in v1. A per-IP rate limit (~30/min) is recommended (429).
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/PollVoteRequest.yaml
+  responses:
+    '200':
+      description: Updated poll (hasVoted true, votedOptionId set).
+      headers:
+        Set-Cookie:
+          description: voterId cookie, set on the first vote from a given browser.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Poll.yaml
+    '400':
+      description: Invalid optionId.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: Invalid optionId
+    '404':
+      $ref: ../components/responses/NotFoundPoll.yaml
+    '409':
+      description: Poll is closed, or the voter has already voted.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: ../components/schemas/Error.yaml
+              - $ref: ../components/schemas/AlreadyVotedError.yaml
+          examples:
+            closed:
+              value:
+                error: Poll is closed
+            alreadyVoted:
+              value:
+                error: Already voted
+                votedOptionId: opt-2
+    '429':
+      description: Too many vote attempts (rate limited).
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying.
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml

@@ -1,0 +1,48 @@
+get:
+  tags:
+    - Rugby Display
+  operationId: matchListRugby
+  summary: Rugby schedule feed (past + upcoming)
+  description: >-
+    The rugby schedule view. Returns the rugby schedule and filters out any
+    non-rugby `sport` value. The client filters upcoming vs. past by
+    `startTime`.
+  parameters:
+    - name: sport
+      in: query
+      required: false
+      description: When provided, only RUGBY returns rows.
+      schema:
+        type: string
+    - name: tournament
+      in: query
+      required: false
+      description: Tournament slug.
+      schema:
+        type: string
+    - name: from
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    - name: to
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    - name: status
+      in: query
+      required: false
+      schema:
+        $ref: ../components/schemas/MatchStatus.yaml
+  responses:
+    '200':
+      description: Schedule items.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/MatchScheduleItem.yaml

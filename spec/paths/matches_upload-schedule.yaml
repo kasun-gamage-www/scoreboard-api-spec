@@ -1,0 +1,39 @@
+post:
+  tags:
+    - Matches
+  operationId: matchUploadSchedule
+  summary: Bulk-import matches from CSV / Excel
+  description: >-
+    Protected. Each row becomes one Match. Rows that fail validation are
+    reported in `errors[]` but do not abort the import unless every row fails
+    (then 422). Column order: homeTeamName, awayTeamName, sport, matchType?,
+    scheduledAt?, venue?, status?, notes?.
+  security:
+    - accessToken: []
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          $ref: ../components/schemas/ScheduleUploadRequest.yaml
+  responses:
+    '200':
+      description: Import summary.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ScheduleUploadResult.yaml
+    '400':
+      description: No file uploaded.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: No file uploaded
+    '422':
+      description: All rows failed validation.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ScheduleUploadFailure.yaml

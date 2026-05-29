@@ -1,0 +1,44 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Teams
+  operationId: teamGet
+  summary: Fetch a team by slug
+  responses:
+    '200':
+      description: The team.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Team.yaml
+    '404':
+      $ref: ../components/responses/NotFoundTeam.yaml
+put:
+  tags:
+    - Teams
+  operationId: teamReplace
+  summary: Full replacement of a team
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/TeamInput.yaml
+  responses:
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Team.yaml
+    '404':
+      $ref: ../components/responses/NotFoundTeam.yaml
+delete:
+  tags:
+    - Teams
+  operationId: teamDelete
+  summary: Delete a team
+  responses:
+    '204':
+      description: Deleted.

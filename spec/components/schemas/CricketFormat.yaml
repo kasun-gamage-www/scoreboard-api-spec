@@ -1,0 +1,13 @@
+type:
+  - string
+  - 'null'
+description: >-
+  Game length. T20/OD/T10/HUNDRED are single-innings-per-side; TEST allows two.
+  For HUNDRED the `*Overs`/`overs` fields carry total balls (0..100).
+enum:
+  - T20
+  - OD
+  - T10
+  - TEST
+  - HUNDRED
+  - null

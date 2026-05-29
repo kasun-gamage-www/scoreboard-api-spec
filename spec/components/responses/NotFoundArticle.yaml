@@ -1,0 +1,7 @@
+description: Article not found.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/Error.yaml
+    example:
+      error: Article not found

@@ -1,0 +1,16 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Rugby Display
+  operationId: rugbyMatchDetail
+  summary: Full rugby match detail (scorecard, commentary, analysis, MVP)
+  responses:
+    '200':
+      description: Rugby match detail.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/RugbyMatchDetail.yaml
+    '404':
+      $ref: ../components/responses/NotFoundMatch.yaml

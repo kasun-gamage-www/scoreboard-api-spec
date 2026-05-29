@@ -1,0 +1,37 @@
+type: object
+required:
+  - title
+  - eventType
+  - status
+properties:
+  title:
+    type: string
+  eventType:
+    $ref: ./OtherEventType.yaml
+  status:
+    allOf:
+      - $ref: ./MatchStatus.yaml
+    default: SCHEDULED
+  sport:
+    $ref: ./OtherEventSport.yaml
+  tournamentSlug:
+    type:
+      - string
+      - 'null'
+  venue:
+    type:
+      - string
+      - 'null'
+  scheduledAt:
+    type:
+      - string
+      - 'null'
+    format: date-time
+  organizer:
+    type:
+      - string
+      - 'null'
+  description:
+    type:
+      - string
+      - 'null'

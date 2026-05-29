@@ -1,0 +1,12 @@
+type: object
+properties:
+  label:
+    type: string
+    description: '''e.g. "1st Innings", "Innings Break".'''
+  durationMins:
+    type: integer
+  from:
+    type: string
+    description: Pre-formatted display string.
+  to:
+    type: string

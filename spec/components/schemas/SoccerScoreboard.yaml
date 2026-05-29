@@ -1,0 +1,8 @@
+type: object
+properties:
+  winner:
+    type: string
+  homeTeam:
+    $ref: ./SoccerScoreboardTeam.yaml
+  awayTeam:
+    $ref: ./SoccerScoreboardTeam.yaml

@@ -1,0 +1,41 @@
+type: object
+description: Soccer summary card.
+required:
+  - slug
+  - sport
+  - status
+  - homeTeam
+  - awayTeam
+properties:
+  slug:
+    type: string
+  embedSlug:
+    type: string
+  sport:
+    type: string
+  tournament:
+    type: string
+  tournamentLabel:
+    type: string
+  status:
+    type: string
+    enum:
+      - UPCOMING
+      - LIVE
+      - RESULT
+  startTime:
+    type: string
+    format: date-time
+  venue:
+    type: string
+  venueLabel:
+    type: string
+  homeTeam:
+    $ref: ./SoccerSummaryTeam.yaml
+  awayTeam:
+    $ref: ./SoccerSummaryTeam.yaml
+  result:
+    oneOf:
+      - $ref: ./SoccerSummaryResult.yaml
+      - type: 'null'
+    description: Omit/null unless status is RESULT.

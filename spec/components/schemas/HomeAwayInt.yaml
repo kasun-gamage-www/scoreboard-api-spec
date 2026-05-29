@@ -1,0 +1,7 @@
+type: object
+description: A home/away integer pair (counts or percentages).
+properties:
+  home:
+    type: integer
+  away:
+    type: integer

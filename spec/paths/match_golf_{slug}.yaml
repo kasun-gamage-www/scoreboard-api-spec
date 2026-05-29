@@ -1,0 +1,16 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Golf Display
+  operationId: golfEventDetail
+  summary: Full golf event detail (leaderboard / scorecard / hole-by-hole)
+  responses:
+    '200':
+      description: Golf event detail.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/GolfEventDetail.yaml
+    '404':
+      $ref: ../components/responses/NotFoundEvent.yaml

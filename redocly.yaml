@@ -1,0 +1,17 @@
+# Redocly configuration — see https://redocly.com/docs/cli/configuration/
+# Multi-file source of truth lives under spec/. The root openapi.yaml is a
+# generated, self-contained bundle (what Swagger UI and consumers load) —
+# regenerate it with `npm run bundle`, do not hand-edit it.
+apis:
+  scoreboard@v1:
+    root: spec/openapi.yaml
+    output: openapi.yaml
+
+extends:
+  - recommended
+
+rules:
+  # CRUD endpoints are intentionally unprotected in the current implementation
+  # (documented in info.description); only media/upload routes enforce the JWT.
+  # Don't force a security scheme onto every operation.
+  security-defined: off

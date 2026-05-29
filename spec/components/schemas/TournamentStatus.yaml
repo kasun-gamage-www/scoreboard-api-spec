@@ -1,0 +1,6 @@
+type: string
+enum:
+  - UPCOMING
+  - ONGOING
+  - COMPLETED
+  - CANCELLED

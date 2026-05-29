@@ -1,0 +1,20 @@
+type: object
+required:
+  - id
+  - name
+  - createdAt
+  - updatedAt
+properties:
+  id:
+    $ref: ./SponsorId.yaml
+  name:
+    type: string
+  logoUrl:
+    type:
+      - string
+      - 'null'
+    description: Public URL from /sponsors/upload.
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

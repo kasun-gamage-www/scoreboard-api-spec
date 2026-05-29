@@ -1,0 +1,11 @@
+type: object
+description: Project-wide error shape.
+required:
+  - error
+properties:
+  error:
+    type: string
+    description: Human-readable message.
+  code:
+    type: string
+    description: Optional machine code.

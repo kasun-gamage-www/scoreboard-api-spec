@@ -1,0 +1,15 @@
+type: object
+properties:
+  order:
+    type: integer
+    description: Batting order; -256 means unknown (prefer omitting).
+  name:
+    type: string
+  runs:
+    type: integer
+  out:
+    type: object
+    properties:
+      out:
+        type: boolean
+        description: true = dismissed, false = not out.

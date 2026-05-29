@@ -1,0 +1,15 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Golf Display
+  operationId: golfLive
+  summary: Lightweight live golf payload (poll/SSE)
+  description: 'Should set `Cache-Control: no-store`.'
+  responses:
+    '200':
+      description: Live golf payload.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/GolfLive.yaml

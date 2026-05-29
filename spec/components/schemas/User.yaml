@@ -1,0 +1,20 @@
+type: object
+description: User record as returned by GET /user. `passHash` is never exposed.
+required:
+  - id
+  - username
+  - priv
+properties:
+  id:
+    type: string
+    description: Stable user id.
+  username:
+    type: string
+  priv:
+    type: string
+    default: USER
+    description: '''Privilege / role marker (e.g. "USER", "admin").'''
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

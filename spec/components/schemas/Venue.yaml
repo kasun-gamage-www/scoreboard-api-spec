@@ -1,0 +1,60 @@
+type: object
+required:
+  - slug
+  - name
+  - type
+  - status
+  - createdAt
+  - updatedAt
+properties:
+  slug:
+    type: string
+  name:
+    type: string
+  type:
+    $ref: ./VenueType.yaml
+  status:
+    $ref: ./VenueStatus.yaml
+  description:
+    type:
+      - string
+      - 'null'
+  capacity:
+    type:
+      - number
+      - 'null'
+  address:
+    type:
+      - string
+      - 'null'
+  emirate:
+    $ref: ./Emirate.yaml
+  city:
+    type:
+      - string
+      - 'null'
+  country:
+    type:
+      - string
+      - 'null'
+  website:
+    type:
+      - string
+      - 'null'
+  email:
+    type:
+      - string
+      - 'null'
+  phone:
+    type:
+      - string
+      - 'null'
+  imageUrl:
+    type:
+      - string
+      - 'null'
+    description: Public URL from /venues/upload.
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

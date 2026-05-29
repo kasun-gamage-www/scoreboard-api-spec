@@ -1,0 +1,16 @@
+type: object
+properties:
+  name:
+    type: string
+  team:
+    type: string
+  runs:
+    type: integer
+  balls:
+    type: integer
+  fours:
+    type: integer
+  sixes:
+    type: integer
+  strikeRate:
+    type: number

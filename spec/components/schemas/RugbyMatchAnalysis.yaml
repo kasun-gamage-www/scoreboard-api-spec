@@ -1,0 +1,14 @@
+type: object
+properties:
+  half1:
+    type: array
+    items:
+      $ref: ./RugbyAnalysisPoint.yaml
+  half2:
+    type: array
+    items:
+      $ref: ./RugbyAnalysisPoint.yaml
+  scoringTypes:
+    type: array
+    items:
+      $ref: ./RugbyScoringType.yaml

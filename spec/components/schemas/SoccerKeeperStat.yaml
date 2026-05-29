@@ -1,0 +1,14 @@
+type: object
+properties:
+  name:
+    type: string
+  team:
+    type: string
+  saves:
+    type: integer
+  goalsConceded:
+    type: integer
+  cleanSheet:
+    type: boolean
+  penaltiesSaved:
+    type: integer

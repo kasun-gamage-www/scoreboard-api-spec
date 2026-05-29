@@ -1,0 +1,15 @@
+type: object
+properties:
+  order:
+    type: integer
+  name:
+    type: string
+  goals:
+    type: integer
+  assists:
+    type: integer
+  minutes:
+    type: array
+    description: Minute markers for each goal (display strings).
+    items:
+      type: string

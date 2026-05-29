@@ -1,0 +1,7 @@
+description: Tournament not found.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/Error.yaml
+    example:
+      error: Tournament not found

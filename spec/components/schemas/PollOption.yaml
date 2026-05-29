@@ -1,0 +1,14 @@
+type: object
+required:
+  - id
+  - text
+  - votes
+properties:
+  id:
+    type: string
+    description: Stable per option (uuid). Index is NOT stable.
+  text:
+    type: string
+  votes:
+    type: integer
+    description: Tally; always present, 0 if none.

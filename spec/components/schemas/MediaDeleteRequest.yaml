@@ -1,0 +1,8 @@
+type: object
+required:
+  - key
+properties:
+  key:
+    type: string
+    description: Must be inside the `scoreboard/` prefix.
+    example: scoreboard/sponsors/images/2026/05/uuid.png

@@ -1,0 +1,44 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Clubs
+  operationId: clubGet
+  summary: Fetch a club by slug
+  responses:
+    '200':
+      description: The club.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Club.yaml
+    '404':
+      $ref: ../components/responses/NotFoundClub.yaml
+put:
+  tags:
+    - Clubs
+  operationId: clubReplace
+  summary: Full replacement of a club
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/ClubInput.yaml
+  responses:
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Club.yaml
+    '404':
+      $ref: ../components/responses/NotFoundClub.yaml
+delete:
+  tags:
+    - Clubs
+  operationId: clubDelete
+  summary: Delete a club
+  responses:
+    '204':
+      description: Deleted.

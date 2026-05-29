@@ -1,0 +1,34 @@
+type: object
+description: Golf variant of the past-featured summary.
+required:
+  - slug
+  - sport
+properties:
+  embedSlug:
+    type: string
+  slug:
+    type: string
+  sport:
+    type: string
+    example: GOLF
+  tournament:
+    type: string
+  homeTeam:
+    type: string
+  awayTeam:
+    type: string
+    description: Empty string indicates a stroke-play tournament card.
+  startTime:
+    type: string
+    format: date-time
+  venue:
+    type: string
+  derived:
+    type: object
+    properties:
+      wonBy:
+        type: string
+      comment:
+        type: string
+  scoreboard:
+    $ref: ./GolfScoreboard.yaml

@@ -1,0 +1,33 @@
+get:
+  tags:
+    - Tournaments
+  operationId: tournamentsList
+  summary: List all tournaments
+  description: Every item MUST include `slug` and `name` (used in match/event dropdowns).
+  responses:
+    '200':
+      description: All tournaments.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Tournament.yaml
+post:
+  tags:
+    - Tournaments
+  operationId: tournamentCreate
+  summary: Create a tournament
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/TournamentInput.yaml
+  responses:
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Tournament.yaml

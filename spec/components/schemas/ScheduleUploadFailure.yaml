@@ -1,0 +1,12 @@
+type: object
+required:
+  - error
+  - errors
+properties:
+  error:
+    type: string
+    example: All rows failed validation
+  errors:
+    type: array
+    items:
+      $ref: ./ScheduleRowError.yaml

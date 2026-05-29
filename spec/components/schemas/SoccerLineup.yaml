@@ -1,0 +1,15 @@
+type: object
+properties:
+  teamName:
+    type: string
+  formation:
+    type: string
+    description: '''e.g. "4-3-3".'''
+  starters:
+    type: array
+    items:
+      $ref: ./SoccerLineupPlayer.yaml
+  substitutes:
+    type: array
+    items:
+      $ref: ./SoccerLineupPlayer.yaml

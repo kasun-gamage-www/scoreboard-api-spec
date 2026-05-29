@@ -1,0 +1,41 @@
+type: object
+description: Rugby summary card.
+required:
+  - slug
+  - sport
+  - status
+  - homeTeam
+  - awayTeam
+properties:
+  slug:
+    type: string
+  embedSlug:
+    type: string
+  sport:
+    type: string
+  tournament:
+    type: string
+  tournamentLabel:
+    type: string
+  status:
+    type: string
+    enum:
+      - UPCOMING
+      - LIVE
+      - RESULT
+  startTime:
+    type: string
+    format: date-time
+  venue:
+    type: string
+  venueLabel:
+    type: string
+  homeTeam:
+    $ref: ./RugbySummaryTeam.yaml
+  awayTeam:
+    $ref: ./RugbySummaryTeam.yaml
+  result:
+    oneOf:
+      - $ref: ./RugbySummaryResult.yaml
+      - type: 'null'
+    description: Omit/null unless status is RESULT.

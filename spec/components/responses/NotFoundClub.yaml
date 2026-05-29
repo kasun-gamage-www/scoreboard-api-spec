@@ -1,0 +1,7 @@
+description: Club not found.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/Error.yaml
+    example:
+      error: Club not found

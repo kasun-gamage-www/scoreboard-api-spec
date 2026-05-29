@@ -1,0 +1,37 @@
+get:
+  tags:
+    - Soccer Legacy
+  operationId: soccerScoresList
+  deprecated: true
+  summary: '[Deprecated] List legacy soccer-scores'
+  description: >-
+    Legacy route, `/api`-only (not mirrored at the host root). Superseded by the
+    soccer display endpoints and the generic `/matches` resource.
+  responses:
+    '200':
+      description: Legacy scores.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/SoccerScore.yaml
+post:
+  tags:
+    - Soccer Legacy
+  operationId: soccerScoreCreate
+  deprecated: true
+  summary: '[Deprecated] Create a legacy soccer-score'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/SoccerScoreInput.yaml
+  responses:
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/SoccerScore.yaml

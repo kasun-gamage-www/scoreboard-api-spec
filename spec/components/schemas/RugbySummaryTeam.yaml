@@ -1,0 +1,14 @@
+type: object
+properties:
+  name:
+    type: string
+  shortName:
+    type: string
+  logoUrl:
+    type: string
+    description: Empty string allowed; client falls back by name.
+  halves:
+    type: array
+    description: Empty for upcoming matches.
+    items:
+      $ref: ./RugbySummaryHalf.yaml

@@ -1,0 +1,31 @@
+type: object
+description: Soccer variant of the past-featured summary.
+required:
+  - slug
+  - sport
+properties:
+  embedSlug:
+    type: string
+  slug:
+    type: string
+  sport:
+    type: string
+  tournament:
+    type: string
+  homeTeam:
+    type: string
+  awayTeam:
+    type: string
+  startTime:
+    type: string
+    format: date-time
+  group:
+    type:
+      - string
+      - 'null'
+  venue:
+    type: string
+  derived:
+    $ref: ./FeaturedDerived.yaml
+  scoreboard:
+    $ref: ./SoccerScoreboard.yaml

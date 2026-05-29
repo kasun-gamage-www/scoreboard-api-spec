@@ -1,0 +1,14 @@
+type: object
+properties:
+  rank:
+    type: integer
+  name:
+    type: string
+  total:
+    type: integer
+  today:
+    type: integer
+  thru:
+    $ref: ./GolfThru.yaml
+  country:
+    type: string

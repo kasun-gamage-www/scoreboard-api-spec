@@ -1,0 +1,41 @@
+type: object
+required:
+  - title
+  - author
+  - content
+  - category
+  - sport
+  - status
+properties:
+  title:
+    type: string
+  author:
+    type: string
+  content:
+    type: string
+    description: HTML body.
+  category:
+    $ref: ./ArticleCategory.yaml
+  sport:
+    $ref: ./SportBasic.yaml
+  status:
+    allOf:
+      - $ref: ./ArticleStatus.yaml
+    default: DRAFT
+  summary:
+    type:
+      - string
+      - 'null'
+  imageUrl:
+    type:
+      - string
+      - 'null'
+  imageYAlignment:
+    allOf:
+      - $ref: ./ImageYAlignment.yaml
+    default: center
+  imageYOffset:
+    type:
+      - number
+      - 'null'
+    description: Required when imageYAlignment is `custom`; MUST be null otherwise.

@@ -1,0 +1,55 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      type: string
+get:
+  tags:
+    - Soccer Legacy
+  operationId: soccerScoreGet
+  deprecated: true
+  summary: '[Deprecated] Fetch a legacy soccer-score by id'
+  responses:
+    '200':
+      description: Legacy score.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/SoccerScore.yaml
+put:
+  tags:
+    - Soccer Legacy
+  operationId: soccerScoreReplace
+  deprecated: true
+  summary: '[Deprecated] Replace a legacy soccer-score'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/SoccerScoreInput.yaml
+  responses:
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/SoccerScore.yaml
+delete:
+  tags:
+    - Soccer Legacy
+  operationId: soccerScoreDelete
+  deprecated: true
+  summary: '[Deprecated] Delete a legacy soccer-score'
+  responses:
+    '200':
+      description: Deleted.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: Score deleted

@@ -1,0 +1,32 @@
+get:
+  tags:
+    - Sponsors
+  operationId: sponsorsList
+  summary: List all sponsors
+  responses:
+    '200':
+      description: All sponsors.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Sponsor.yaml
+post:
+  tags:
+    - Sponsors
+  operationId: sponsorCreate
+  summary: Create a sponsor
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/SponsorInput.yaml
+  responses:
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Sponsor.yaml

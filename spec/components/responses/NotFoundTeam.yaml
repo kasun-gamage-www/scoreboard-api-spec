@@ -1,0 +1,7 @@
+description: Team not found.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/Error.yaml
+    example:
+      error: Team not found

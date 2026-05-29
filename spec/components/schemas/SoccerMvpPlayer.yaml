@@ -1,0 +1,18 @@
+type: object
+properties:
+  rank:
+    type: integer
+  name:
+    type: string
+  team:
+    type: string
+  imageUrl:
+    type: string
+  attack:
+    type: number
+  defense:
+    type: number
+  distribution:
+    type: number
+  total:
+    type: number

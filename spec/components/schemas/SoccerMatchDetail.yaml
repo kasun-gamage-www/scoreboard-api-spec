@@ -1,0 +1,99 @@
+type: object
+description: >-
+  Full soccer match page. startTime/matchDate/lastUpdated and halves[].from/to
+  are pre-formatted display strings rendered verbatim.
+required:
+  - slug
+properties:
+  slug:
+    type: string
+  sport:
+    type: string
+  tournament:
+    type: string
+  seriesName:
+    type: string
+  status:
+    type: string
+    enum:
+      - Past
+      - Live
+      - Upcoming
+  stage:
+    type: string
+  venue:
+    type: string
+  city:
+    type: string
+  location:
+    type: string
+  duration:
+    type: string
+    description: '''e.g. "90 Min", "90 + ET + Penalties".'''
+  startTime:
+    type: string
+    description: Display string.
+  matchDate:
+    type: string
+    description: Display string.
+  homeTeam:
+    $ref: ./SoccerTeamScore.yaml
+  awayTeam:
+    $ref: ./SoccerTeamScore.yaml
+  referee:
+    type: string
+  attendance:
+    type: integer
+  result:
+    type: string
+    description: Empty string allowed.
+  topScorers:
+    type: array
+    items:
+      $ref: ./SoccerScorerStat.yaml
+  keepers:
+    type: array
+    items:
+      $ref: ./SoccerKeeperStat.yaml
+  teamStats:
+    $ref: ./SoccerTeamStats.yaml
+  lineups:
+    type: array
+    items:
+      $ref: ./SoccerLineup.yaml
+  events:
+    type: array
+    items:
+      $ref: ./SoccerMatchEvent.yaml
+  commentary:
+    type: array
+    items:
+      $ref: ./SoccerCommentaryGroup.yaml
+  analysis:
+    $ref: ./SoccerMatchAnalysis.yaml
+  heroes:
+    $ref: ./SoccerMatchHeroes.yaml
+  mvp:
+    type: array
+    items:
+      $ref: ./SoccerMvpPlayer.yaml
+  videoEmbedUrl:
+    type: string
+    description: Empty string when no video; else youtube/vimeo host only.
+  streamTitle:
+    type: string
+  rightsHolder:
+    type: string
+  totalViews:
+    type: integer
+  liveViewers:
+    type: integer
+  halves:
+    type: array
+    items:
+      $ref: ./PeriodTiming.yaml
+  lastUpdated:
+    type: string
+    description: Display string.
+  lastUpdatedBy:
+    type: string

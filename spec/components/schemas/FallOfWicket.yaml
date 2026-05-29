@@ -1,0 +1,11 @@
+type: object
+properties:
+  score:
+    type: integer
+  wicket:
+    type: integer
+  batter:
+    type: string
+  over:
+    type: string
+    description: '''e.g. "4.2".'''

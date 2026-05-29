@@ -1,0 +1,23 @@
+type: object
+properties:
+  kickOff:
+    type: boolean
+  final:
+    type: integer
+    description: Final goals.
+  finalGoals:
+    type: integer
+  finalShots:
+    type: integer
+  finalShotsOnTarget:
+    type: integer
+  finalCorners:
+    type: integer
+  finalYellowCards:
+    type: integer
+  finalRedCards:
+    type: integer
+  scorers:
+    type: array
+    items:
+      $ref: ./SoccerScoreboardScorer.yaml

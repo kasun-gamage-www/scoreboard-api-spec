@@ -1,0 +1,19 @@
+type: object
+description: Each field is a home/away pair.
+properties:
+  possession:
+    $ref: ./HomeAwayInt.yaml
+  shots:
+    $ref: ./HomeAwayInt.yaml
+  shotsOnTarget:
+    $ref: ./HomeAwayInt.yaml
+  corners:
+    $ref: ./HomeAwayInt.yaml
+  fouls:
+    $ref: ./HomeAwayInt.yaml
+  offsides:
+    $ref: ./HomeAwayInt.yaml
+  yellowCards:
+    $ref: ./HomeAwayInt.yaml
+  redCards:
+    $ref: ./HomeAwayInt.yaml

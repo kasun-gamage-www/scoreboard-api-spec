@@ -1,0 +1,28 @@
+type: object
+required:
+  - kind
+properties:
+  kind:
+    type: string
+    enum:
+      - ball
+  over:
+    type: string
+    description: overs.balls.
+  badge:
+    type: string
+    enum:
+      - dot
+      - run
+      - four
+      - six
+      - wide
+      - noball
+      - wicket
+  badgeLabel:
+    type: string
+    description: 0 | 1 | 4 | 6 | WD | NB | W.
+  description:
+    type: string
+  isBoundary:
+    type: boolean

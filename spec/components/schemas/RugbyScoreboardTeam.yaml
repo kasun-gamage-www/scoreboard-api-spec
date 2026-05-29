@@ -1,0 +1,20 @@
+type: object
+properties:
+  kickFirst:
+    type: boolean
+  final:
+    type: integer
+    description: Total points.
+  finalTries:
+    type: integer
+  finalConversions:
+    type: integer
+  finalPenalties:
+    type: integer
+  finalDropGoals:
+    type: integer
+  scorers:
+    type: array
+    description: May be truncated server-side (carousel shows top scorers).
+    items:
+      $ref: ./RugbyScoreboardScorer.yaml

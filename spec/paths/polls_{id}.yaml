@@ -1,0 +1,53 @@
+parameters:
+  - $ref: ../components/parameters/PollId.yaml
+get:
+  tags:
+    - Polls
+  operationId: pollGet
+  summary: Fetch a poll by id
+  description: Returns 404 for DRAFT polls or unknown ids.
+  responses:
+    '200':
+      description: The poll.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Poll.yaml
+    '404':
+      $ref: ../components/responses/NotFoundPoll.yaml
+put:
+  tags:
+    - Polls
+  operationId: pollReplace
+  summary: Replace a poll (admin)
+  description: >-
+    Options stay a flat string array. The backend preserves existing
+    `options[].id`/`votes` for matching (case-insensitive) strings, assigns a
+    fresh id (votes 0) to new strings, and drops options no longer present
+    (destroying their votes).
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/PollInput.yaml
+  responses:
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Poll.yaml
+    '404':
+      $ref: ../components/responses/NotFoundPoll.yaml
+delete:
+  tags:
+    - Polls
+  operationId: pollDelete
+  summary: Delete a poll (admin)
+  description: Also discards all of its votes and dedupe records.
+  responses:
+    '204':
+      description: Deleted.
+    '404':
+      $ref: ../components/responses/NotFoundPoll.yaml

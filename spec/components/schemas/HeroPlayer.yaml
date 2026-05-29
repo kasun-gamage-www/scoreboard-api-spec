@@ -1,0 +1,14 @@
+type: object
+description: Include batting OR bowling (or both); omit irrelevant block.
+properties:
+  name:
+    type: string
+  team:
+    type: string
+  imageUrl:
+    type: string
+    description: Empty string allowed.
+  batting:
+    $ref: ./HeroBatting.yaml
+  bowling:
+    $ref: ./HeroBowling.yaml

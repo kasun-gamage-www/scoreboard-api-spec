@@ -1,0 +1,15 @@
+type: object
+properties:
+  title:
+    type: string
+  playerName:
+    type: string
+  round:
+    type: integer
+  hole:
+    type: integer
+  videoEmbedUrl:
+    type: string
+    description: youtube.com / player.vimeo.com only.
+  thumbnailUrl:
+    type: string

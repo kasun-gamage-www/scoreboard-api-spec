@@ -1,0 +1,22 @@
+get:
+  tags:
+    - Soccer Display
+  operationId: soccerPastFeatured
+  summary: Recent featured soccer scorecards (carousel + ticker)
+  parameters:
+    - name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 10
+        maximum: 50
+  responses:
+    '200':
+      description: Featured soccer summaries.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/SoccerFeaturedSummary.yaml

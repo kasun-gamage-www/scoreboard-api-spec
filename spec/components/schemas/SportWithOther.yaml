@@ -1,0 +1,14 @@
+type: string
+description: Sports used by Player, Team, Club (`primarySport`). Adds OTHER.
+enum:
+  - CRICKET
+  - RUGBY
+  - SOCCER
+  - BADMINTON
+  - BOWLING
+  - MOTOR_SPORTS
+  - BASKETBALL
+  - NETBALL
+  - VOLLEYBALL
+  - CYCLING
+  - OTHER

@@ -1,0 +1,16 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Soccer Display
+  operationId: soccerMatchDetail
+  summary: Full soccer match detail (lineups, events, stats, MVP)
+  responses:
+    '200':
+      description: Soccer match detail.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/SoccerMatchDetail.yaml
+    '404':
+      $ref: ../components/responses/NotFoundMatch.yaml

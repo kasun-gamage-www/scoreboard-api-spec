@@ -1,0 +1,15 @@
+type: object
+properties:
+  name:
+    type: string
+  shortName:
+    type: string
+    description: Optional 2-4 letter code.
+  logoUrl:
+    type: string
+    description: Empty string allowed; client falls back by name.
+  innings:
+    type: array
+    description: 0 (upcoming) / 1 (limited overs) / 1-2 (multi-day) entries.
+    items:
+      $ref: ./SummaryInnings.yaml

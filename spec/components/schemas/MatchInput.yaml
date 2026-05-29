@@ -1,0 +1,61 @@
+type: object
+required:
+  - sport
+  - homeTeamName
+  - awayTeamName
+  - status
+properties:
+  sport:
+    $ref: ./MatchSport.yaml
+  homeTeamName:
+    type: string
+  awayTeamName:
+    type: string
+  status:
+    allOf:
+      - $ref: ./MatchStatus.yaml
+    default: SCHEDULED
+  tournamentSlug:
+    type:
+      - string
+      - 'null'
+  matchType:
+    $ref: ./MatchType.yaml
+  venue:
+    type:
+      - string
+      - 'null'
+  scheduledAt:
+    type:
+      - string
+      - 'null'
+    format: date-time
+  referee:
+    type:
+      - string
+      - 'null'
+  notes:
+    type:
+      - string
+      - 'null'
+  homeScore:
+    type:
+      - number
+      - 'null'
+  awayScore:
+    type:
+      - number
+      - 'null'
+  featured:
+    type: boolean
+    description: IGNORED on POST/PUT (set via /matches/:slug/featured); defaults to false.
+  details:
+    $ref: ./SportDetails.yaml
+  homeTeamPlayers:
+    type: array
+    items:
+      $ref: ./EmbeddedPlayer.yaml
+  awayTeamPlayers:
+    type: array
+    items:
+      $ref: ./EmbeddedPlayer.yaml

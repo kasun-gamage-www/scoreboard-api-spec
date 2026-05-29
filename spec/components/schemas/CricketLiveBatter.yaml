@@ -1,0 +1,10 @@
+type: object
+properties:
+  name:
+    type: string
+  onStrike:
+    type: boolean
+  runs:
+    type: integer
+  balls:
+    type: integer

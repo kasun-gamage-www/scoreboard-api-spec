@@ -1,0 +1,52 @@
+type: object
+required:
+  - rank
+  - name
+properties:
+  rank:
+    type: integer
+    minimum: 1
+  tied:
+    type: boolean
+  name:
+    type: string
+  playerId:
+    type:
+      - string
+      - 'null'
+  country:
+    type: string
+    description: ISO 3-letter.
+  total:
+    type:
+      - number
+      - 'null'
+    description: vs par.
+  today:
+    type:
+      - number
+      - 'null'
+  thru:
+    oneOf:
+      - type: integer
+        minimum: 0
+        maximum: 18
+      - type: string
+        enum:
+          - F
+      - type: 'null'
+  strokes:
+    type:
+      - number
+      - 'null'
+  status:
+    type: string
+    enum:
+      - ACTIVE
+      - CUT
+      - WD
+      - DQ
+  rounds:
+    type: array
+    items:
+      $ref: ./GolfRound.yaml

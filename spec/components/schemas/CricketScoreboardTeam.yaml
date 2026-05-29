@@ -1,0 +1,43 @@
+type: object
+properties:
+  batFirst:
+    type: boolean
+  final:
+    type: integer
+    description: Runs (1st innings).
+  finalWick:
+    type: integer
+    description: Wickets (1st innings, 0..10).
+  finalOver:
+    type: integer
+    description: Completed overs (1st innings).
+  finalOverBall:
+    type: integer
+    description: Balls in the current over (0-5).
+  inn1Declared:
+    type: boolean
+    description: Optional, TEST only.
+  inn2Final:
+    type:
+      - number
+      - 'null'
+    description: Optional, TEST only.
+  inn2Wick:
+    type:
+      - number
+      - 'null'
+  inn2Over:
+    type:
+      - number
+      - 'null'
+  inn2OverBall:
+    type:
+      - number
+      - 'null'
+  inn2Declared:
+    type: boolean
+  batting:
+    type: array
+    description: May be truncated server-side (carousel shows top two scorers).
+    items:
+      $ref: ./ScoreboardBatter.yaml

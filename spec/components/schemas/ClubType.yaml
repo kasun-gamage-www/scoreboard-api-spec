@@ -1,0 +1,5 @@
+type: string
+enum:
+  - GRASSROOTS
+  - SEMI_PRO
+  - PROFESSIONAL

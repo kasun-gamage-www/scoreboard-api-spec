@@ -1,0 +1,35 @@
+get:
+  tags:
+    - Rugby Display
+  operationId: rugbySummaries
+  summary: Rugby summary cards (mixed past/live/upcoming)
+  parameters:
+    - name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 10
+        maximum: 20
+    - name: tournament
+      in: query
+      required: false
+      description: Tournament slug; when omitted, mixes tournaments.
+      schema:
+        type: string
+    - name: include
+      in: query
+      required: false
+      description: Comma-separated subset of PAST,LIVE,UPCOMING.
+      schema:
+        type: string
+        default: PAST,LIVE,UPCOMING
+  responses:
+    '200':
+      description: Rugby summary cards (newest/next-up first).
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/RugbyMatchSummary.yaml

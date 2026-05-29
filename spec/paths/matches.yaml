@@ -1,0 +1,37 @@
+get:
+  tags:
+    - Matches
+  operationId: matchesList
+  summary: List all matches
+  description: 'Each match includes `featured: boolean`; at most one is `true`.'
+  responses:
+    '200':
+      description: All matches.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Match.yaml
+post:
+  tags:
+    - Matches
+  operationId: matchCreate
+  summary: Create a match
+  description: >-
+    `featured` is read-only here (ignored; defaults to false). If
+    `tournamentSlug` is set and `details.cricketFormat` is missing/null, the
+    tournament's `cricketFormat` is inherited and persisted onto the match.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/MatchInput.yaml
+  responses:
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Match.yaml

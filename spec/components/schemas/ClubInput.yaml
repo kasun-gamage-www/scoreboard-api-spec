@@ -1,0 +1,51 @@
+type: object
+required:
+  - name
+  - type
+  - primarySport
+  - status
+properties:
+  name:
+    type: string
+  type:
+    $ref: ./ClubType.yaml
+  primarySport:
+    $ref: ./SportWithOther.yaml
+  status:
+    allOf:
+      - $ref: ./ClubStatus.yaml
+    default: ACTIVE
+  description:
+    type:
+      - string
+      - 'null'
+  city:
+    type:
+      - string
+      - 'null'
+  country:
+    type:
+      - string
+      - 'null'
+  foundedYear:
+    type:
+      - number
+      - 'null'
+  website:
+    type:
+      - string
+      - 'null'
+  email:
+    type:
+      - string
+      - 'null'
+  logoUrl:
+    type:
+      - string
+      - 'null'
+  primaryColor:
+    type: string
+    default: '#1976d2'
+  secondaryColor:
+    type: string
+    default: '#ffffff'

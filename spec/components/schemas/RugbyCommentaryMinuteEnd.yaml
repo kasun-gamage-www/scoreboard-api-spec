@@ -1,0 +1,16 @@
+type: object
+required:
+  - kind
+properties:
+  kind:
+    type: string
+    enum:
+      - minute-end
+  minute:
+    type: integer
+  score:
+    type: string
+    description: '''e.g. "24-35".'''
+  halfLabel:
+    type: string
+    description: '''e.g. "Half Time", "Full Time".'''

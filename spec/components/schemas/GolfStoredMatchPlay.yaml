@@ -1,0 +1,43 @@
+type: object
+properties:
+  homePlayer:
+    type: string
+  awayPlayer:
+    type: string
+  homePlayerId:
+    type:
+      - string
+      - 'null'
+  awayPlayerId:
+    type:
+      - string
+      - 'null'
+  homeCountry:
+    type: string
+  awayCountry:
+    type: string
+  holesPlayed:
+    type:
+      - number
+      - 'null'
+    minimum: 0
+    maximum: 18
+  holesRemaining:
+    type:
+      - number
+      - 'null'
+    minimum: 0
+    maximum: 18
+  homeUp:
+    type:
+      - number
+      - 'null'
+    description: Negative when away is up.
+  resultLabel:
+    type:
+      - string
+      - 'null'
+  holes:
+    type: array
+    items:
+      $ref: ./GolfMatchPlayHole.yaml

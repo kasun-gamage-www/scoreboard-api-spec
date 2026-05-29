@@ -1,0 +1,12 @@
+type: object
+properties:
+  hole:
+    type: integer
+    minimum: 1
+    maximum: 18
+  par:
+    type: integer
+  yards:
+    type: integer
+  strokes:
+    type: integer

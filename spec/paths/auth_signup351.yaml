@@ -1,0 +1,39 @@
+post:
+  tags:
+    - Auth
+  operationId: authSignup
+  summary: Create a new account
+  description: >-
+    The obfuscated suffix `351` is part of the canonical path. The client sends
+    a `passHash` (client-side hashed), but the backend MUST still apply its own
+    server-side hash (e.g. bcrypt/argon2) before storing and MUST NOT store the
+    value verbatim.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/SignupRequest.yaml
+  responses:
+    '200':
+      description: Account created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/SignupResponse.yaml
+    '400':
+      description: Missing fields.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: Missing fields
+    '409':
+      description: Username already taken.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: Username already taken

@@ -1,0 +1,4 @@
+oneOf:
+  - type: string
+  - type: number
+description: Opaque sponsor id (numeric or string).

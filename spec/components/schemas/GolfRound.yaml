@@ -1,0 +1,16 @@
+type: object
+properties:
+  round:
+    type: integer
+  strokes:
+    type: integer
+  vsPar:
+    type: integer
+  tee:
+    type: string
+    description: Optional scheduled tee time as display string.
+  holes:
+    type: array
+    description: 18 entries when complete; shorter while in progress.
+    items:
+      $ref: ./GolfRoundHole.yaml

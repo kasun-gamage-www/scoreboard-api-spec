@@ -1,0 +1,32 @@
+type: object
+properties:
+  homePlayer:
+    type: string
+  awayPlayer:
+    type: string
+  homePlayerId:
+    type:
+      - string
+      - 'null'
+  awayPlayerId:
+    type:
+      - string
+      - 'null'
+  homeCountry:
+    type: string
+  awayCountry:
+    type: string
+  holesPlayed:
+    type: integer
+  holesRemaining:
+    type: integer
+  homeUp:
+    type: integer
+    description: Negative when away is up; 0 when AS.
+  resultLabel:
+    type: string
+    description: Empty while in progress.
+  holes:
+    type: array
+    items:
+      $ref: ./GolfMatchPlayHole.yaml

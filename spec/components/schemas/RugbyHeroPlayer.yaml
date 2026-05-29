@@ -1,0 +1,32 @@
+type: object
+description: >-
+  Hero card. `stats` carries scoring fields (tries/conversions/penalties/
+  dropGoals/points) for scorers, or defensive fields (tackles/missed/turnovers)
+  for the top tackler.
+properties:
+  name:
+    type: string
+  team:
+    type: string
+  imageUrl:
+    type: string
+    description: Empty string allowed.
+  stats:
+    type: object
+    properties:
+      tries:
+        type: integer
+      conversions:
+        type: integer
+      penalties:
+        type: integer
+      dropGoals:
+        type: integer
+      points:
+        type: integer
+      tackles:
+        type: integer
+      missed:
+        type: integer
+      turnovers:
+        type: integer

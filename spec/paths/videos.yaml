@@ -1,0 +1,32 @@
+get:
+  tags:
+    - Videos
+  operationId: videosList
+  summary: List videos (HIDDEN excluded from public lists)
+  responses:
+    '200':
+      description: Videos.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Video.yaml
+post:
+  tags:
+    - Videos
+  operationId: videoCreate
+  summary: Create a video
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/VideoInput.yaml
+  responses:
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Video.yaml

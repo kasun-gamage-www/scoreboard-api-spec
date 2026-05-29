@@ -1,0 +1,44 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Articles
+  operationId: articleGet
+  summary: Fetch an article by slug (DRAFT/ARCHIVED reachable for admin preview)
+  responses:
+    '200':
+      description: The article.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Article.yaml
+    '404':
+      $ref: ../components/responses/NotFoundArticle.yaml
+put:
+  tags:
+    - Articles
+  operationId: articleReplace
+  summary: Full replacement of an article
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/ArticleInput.yaml
+  responses:
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Article.yaml
+    '404':
+      $ref: ../components/responses/NotFoundArticle.yaml
+delete:
+  tags:
+    - Articles
+  operationId: articleDelete
+  summary: Delete an article
+  responses:
+    '204':
+      description: Deleted.

@@ -1,0 +1,47 @@
+type: object
+required:
+  - id
+  - question
+  - options
+  - status
+  - totalVotes
+  - createdAt
+  - hasVoted
+  - votedOptionId
+properties:
+  id:
+    type: string
+    description: Stable id (uuid or slug).
+  question:
+    type: string
+  options:
+    type: array
+    items:
+      $ref: ./PollOption.yaml
+  status:
+    $ref: ./PollPublicStatus.yaml
+  startDate:
+    type:
+      - string
+      - 'null'
+    format: date-time
+  endDate:
+    type:
+      - string
+      - 'null'
+    format: date-time
+  totalVotes:
+    type: integer
+    description: Sum of options[].votes.
+  createdAt:
+    $ref: ./Timestamp.yaml
+  hasVoted:
+    type: boolean
+    description: >-
+      True if the current voter (cookie/JWT) already voted. False for anonymous
+      with no cookie.
+  votedOptionId:
+    type:
+      - string
+      - 'null'
+    description: The chosen options[].id when hasVoted is true; else null.

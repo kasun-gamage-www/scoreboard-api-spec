@@ -1,0 +1,24 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    description: Opaque sponsor id (numeric or string). Sponsors are NOT slug-addressed.
+    schema:
+      $ref: ../components/schemas/SponsorId.yaml
+delete:
+  tags:
+    - Sponsors
+  operationId: sponsorDelete
+  summary: Delete a sponsor by id
+  description: There is intentionally no GET-by-id and no PUT; edits = delete + recreate.
+  responses:
+    '204':
+      description: Deleted.
+    '404':
+      description: Sponsor not found.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: Sponsor not found

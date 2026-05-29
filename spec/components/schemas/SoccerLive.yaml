@@ -1,0 +1,30 @@
+type: object
+properties:
+  slug:
+    type: string
+  sport:
+    type: string
+  status:
+    type: string
+    example: LIVE
+  half:
+    type: string
+    description: '''e.g. "2nd Half".'''
+  minute:
+    type: integer
+  addedTime:
+    type: integer
+  homeTeam:
+    $ref: ./SoccerLiveTeam.yaml
+  awayTeam:
+    $ref: ./SoccerLiveTeam.yaml
+  possession:
+    $ref: ./HomeAwayInt.yaml
+  lastEvents:
+    type: array
+    description: Most recent events, newest right.
+    items:
+      type: string
+  lastUpdated:
+    type: string
+    format: date-time

@@ -1,0 +1,14 @@
+type: object
+properties:
+  name:
+    type: string
+  team:
+    type: string
+  goals:
+    type: integer
+  assists:
+    type: integer
+  shots:
+    type: integer
+  shotsOnTarget:
+    type: integer

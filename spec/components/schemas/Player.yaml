@@ -1,0 +1,48 @@
+type: object
+required:
+  - slug
+  - name
+  - sport
+  - status
+  - createdAt
+  - updatedAt
+properties:
+  slug:
+    type: string
+  name:
+    type: string
+  sport:
+    $ref: ./SportWithOther.yaml
+  status:
+    $ref: ./PlayerStatus.yaml
+  bio:
+    type:
+      - string
+      - 'null'
+  team:
+    type:
+      - string
+      - 'null'
+    description: Free-text team name, not a Team.slug FK.
+  position:
+    type:
+      - string
+      - 'null'
+  country:
+    type:
+      - string
+      - 'null'
+  photoUrl:
+    type:
+      - string
+      - 'null'
+    description: Public URL from /players/upload.
+  jerseyNumber:
+    type:
+      - number
+      - 'null'
+    description: Last value seen on a match's homeTeamPlayers / awayTeamPlayers entry.
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

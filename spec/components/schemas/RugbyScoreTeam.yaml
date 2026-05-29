@@ -1,0 +1,21 @@
+type: object
+required:
+  - name
+properties:
+  name:
+    type: string
+  score:
+    type: integer
+    default: 0
+  tries:
+    type: integer
+    default: 0
+  conversions:
+    type: integer
+    default: 0
+  penalties:
+    type: integer
+    default: 0
+  dropGoals:
+    type: integer
+    default: 0

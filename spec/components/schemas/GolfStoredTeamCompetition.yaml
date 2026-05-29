@@ -1,0 +1,31 @@
+type: object
+properties:
+  homeTeam:
+    type: string
+  awayTeam:
+    type: string
+  homeTeamPoints:
+    type:
+      - number
+      - 'null'
+    description: 0.5 increments.
+  awayTeamPoints:
+    type:
+      - number
+      - 'null'
+  totalPoints:
+    type:
+      - number
+      - 'null'
+  winningPoints:
+    type:
+      - number
+      - 'null'
+  resultLabel:
+    type:
+      - string
+      - 'null'
+  sessions:
+    type: array
+    items:
+      $ref: ./GolfSession.yaml

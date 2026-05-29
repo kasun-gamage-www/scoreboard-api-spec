@@ -1,0 +1,16 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Cricket Display
+  operationId: cricketMatchDetail
+  summary: Full cricket match detail (scorecard, commentary, analysis, MVP)
+  responses:
+    '200':
+      description: Cricket match detail.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CricketMatchDetail.yaml
+    '404':
+      $ref: ../components/responses/NotFoundMatch.yaml

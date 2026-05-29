@@ -1,0 +1,19 @@
+type: object
+properties:
+  half1:
+    type: array
+    items:
+      $ref: ./SoccerAnalysisPoint.yaml
+  half2:
+    type: array
+    items:
+      $ref: ./SoccerAnalysisPoint.yaml
+  extraTime:
+    type: array
+    description: Present only when the match went to extra time.
+    items:
+      $ref: ./SoccerAnalysisPoint.yaml
+  goalTypes:
+    type: array
+    items:
+      $ref: ./SoccerGoalType.yaml

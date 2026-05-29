@@ -1,0 +1,12 @@
+type: object
+properties:
+  runs:
+    type: integer
+  balls:
+    type: integer
+  fours:
+    type: integer
+  sixes:
+    type: integer
+  strikeRate:
+    type: number

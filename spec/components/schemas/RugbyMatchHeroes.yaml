@@ -1,0 +1,8 @@
+type: object
+properties:
+  playerOfMatch:
+    $ref: ./RugbyHeroPlayer.yaml
+  topTryScorer:
+    $ref: ./RugbyHeroPlayer.yaml
+  topTackler:
+    $ref: ./RugbyHeroPlayer.yaml

@@ -1,0 +1,28 @@
+type: object
+required:
+  - question
+  - options
+  - status
+properties:
+  question:
+    type: string
+  options:
+    type: array
+    minItems: 2
+    description: Plain text strings; the backend assigns each a stable id.
+    items:
+      type: string
+  status:
+    allOf:
+      - $ref: ./PollAdminStatus.yaml
+    default: DRAFT
+  startDate:
+    type:
+      - string
+      - 'null'
+    format: date-time
+  endDate:
+    type:
+      - string
+      - 'null'
+    format: date-time

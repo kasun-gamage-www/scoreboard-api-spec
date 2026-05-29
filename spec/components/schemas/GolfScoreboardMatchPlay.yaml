@@ -1,0 +1,16 @@
+type: object
+properties:
+  homePlayer:
+    type: string
+  awayPlayer:
+    type: string
+  homeUp:
+    type: integer
+    description: Negative when away is up; 0 when AS.
+  holesRemaining:
+    type: integer
+  holesPlayed:
+    type: integer
+  resultLabel:
+    type: string
+    description: '''e.g. "3 & 2".'''

@@ -1,0 +1,16 @@
+type: object
+properties:
+  name:
+    type: string
+  team:
+    type: string
+  overs:
+    type: number
+  maidens:
+    type: integer
+  runs:
+    type: integer
+  wickets:
+    type: integer
+  economy:
+    type: number

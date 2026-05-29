@@ -1,0 +1,34 @@
+get:
+  tags:
+    - Players
+  operationId: playersList
+  summary: List players (optional name search)
+  parameters:
+    - $ref: ../components/parameters/Search.yaml
+  responses:
+    '200':
+      description: Players (filtered by `search` when provided).
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Player.yaml
+post:
+  tags:
+    - Players
+  operationId: playerCreate
+  summary: Create a player
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/PlayerInput.yaml
+  responses:
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Player.yaml

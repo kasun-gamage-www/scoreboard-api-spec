@@ -1,0 +1,10 @@
+type:
+  - string
+  - 'null'
+description: Hero crop hint. `imageYOffset` is only set when this is `custom`.
+enum:
+  - top
+  - center
+  - bottom
+  - custom
+  - null

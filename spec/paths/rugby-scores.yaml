@@ -1,0 +1,37 @@
+get:
+  tags:
+    - Rugby Legacy
+  operationId: rugbyScoresList
+  deprecated: true
+  summary: '[Deprecated] List legacy rugby-scores'
+  description: >-
+    Legacy route, `/api`-only (not mirrored at the host root). Superseded by the
+    rugby display endpoints and the generic `/matches` resource.
+  responses:
+    '200':
+      description: Legacy scores.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/RugbyScore.yaml
+post:
+  tags:
+    - Rugby Legacy
+  operationId: rugbyScoreCreate
+  deprecated: true
+  summary: '[Deprecated] Create a legacy rugby-score'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/RugbyScoreInput.yaml
+  responses:
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/RugbyScore.yaml
