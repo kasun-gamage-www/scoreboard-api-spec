@@ -9,7 +9,16 @@ info:
     per-resource markdown specs under `Legacy/`. It covers content management
     (articles, clubs, players, teams, tournaments, venues, photos, videos, sponsors,
     other events), the generic `/matches` resource, sport-specific read surfaces
-    (cricket & golf), polls, authentication, and the S3 media-presign contract.
+    (cricket, rugby, soccer & golf), polls, authentication, and the S3 media-presign
+    contract.
+
+    ## Per-sport read surfaces
+    Cricket, rugby and soccer each expose a public read family. Cricket reuses the
+    shared `/match/list-match` and `/match/past-featured` endpoints; rugby and soccer
+    use sport-namespaced equivalents (`/match/list-rugby`, `/match/rugby/past-featured`,
+    etc.). Golf is specified but not yet implemented in the server. There are also
+    deprecated `/api`-only legacy score families per sport (`/cric-scores`,
+    `/rugby-scores`, `/soccer-scores`).
 
     ## Base URL & the `/api` prefix
     The base URL is configured via the `API_BASE_URI` environment variable
@@ -100,6 +109,16 @@ tags:
     description: Cross-sport public read surfaces (schedule, featured carousel).
   - name: Cricket Legacy
     description: Deprecated `/api/cric-scores` routes. Do not build new code against these.
+  - name: Rugby Display
+    description: Public read surfaces for rugby pages.
+  - name: Soccer Display
+    description: Public read surfaces for soccer pages.
+  - name: Rugby Legacy
+    description: Deprecated `/api/rugby-scores` routes. Do not build new code against these.
+  - name: Soccer Legacy
+    description: Deprecated `/api/soccer-scores` routes. Do not build new code against these.
+  - name: Users
+    description: User directory (admin list).
 
 paths:
   # ============================ AUTH ============================
@@ -170,6 +189,25 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
               example: { error: "Username already taken" }
+
+  # ============================ USERS ============================
+  /user:
+    get:
+      tags: [Users]
+      operationId: userList
+      summary: List users
+      description: >-
+        Returns all users, newest first. `passHash` is stripped from the response.
+        Reachable with and without the `/api` prefix. Not protected in the current
+        implementation — SHOULD be locked behind `x-access-token` in production.
+      responses:
+        "200":
+          description: Users (newest first).
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/User" }
 
   # ============================ MEDIA ============================
   /media/presign:
@@ -1343,10 +1381,13 @@ paths:
     get:
       tags: [Match Display (shared)]
       operationId: matchListMatch
-      summary: Schedule feed (past + upcoming) across sports
+      summary: Cricket schedule feed (past + upcoming)
       description: >-
-        Shared by cricket and golf schedule views. The client filters upcoming vs.
-        past by `startTime` and picks the next one for the countdown.
+        The cricket schedule view. In the current server this returns the cricket
+        schedule and filters out any non-cricket `sport` value. Rugby and soccer use
+        their own `/match/list-rugby` and `/match/list-soccer` endpoints. The client
+        filters upcoming vs. past by `startTime` and picks the next one for the
+        countdown.
       parameters:
         - name: sport
           in: query
@@ -1383,11 +1424,13 @@ paths:
     get:
       tags: [Match Display (shared)]
       operationId: matchPastFeatured
-      summary: Recent featured match scorecards (carousel + ticker)
+      summary: Recent featured cricket scorecards (carousel + ticker)
       description: >-
-        Returns compact summaries. Items are either the cricket-shaped
-        `FeaturedMatchSummary` or the golf-shaped `FeaturedGolfSummary`, discriminated
-        by `sport` / `scoreboard.format`. Cacheable (`shareReplay(1)` on the client).
+        The cricket past-featured carousel feed. Returns compact, cricket-shaped
+        `FeaturedMatchSummary` items. Rugby and soccer expose their own
+        `/match/rugby/past-featured` and `/match/soccer/past-featured` endpoints
+        (golf is specified but not yet implemented). Cacheable (`shareReplay(1)` on
+        the client).
       parameters:
         - name: limit
           in: query
@@ -1469,6 +1512,244 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CricketLive" }
+
+  # ==================== RUGBY DISPLAY ====================
+  /match/list-rugby:
+    get:
+      tags: [Rugby Display]
+      operationId: matchListRugby
+      summary: Rugby schedule feed (past + upcoming)
+      description: >-
+        The rugby schedule view. Returns the rugby schedule and filters out any
+        non-rugby `sport` value. The client filters upcoming vs. past by `startTime`.
+      parameters:
+        - name: sport
+          in: query
+          required: false
+          description: When provided, only RUGBY returns rows.
+          schema: { type: string }
+        - name: tournament
+          in: query
+          required: false
+          description: Tournament slug.
+          schema: { type: string }
+        - name: from
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/MatchStatus" }
+      responses:
+        "200":
+          description: Schedule items.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MatchScheduleItem" }
+
+  /match/rugby/past-featured:
+    get:
+      tags: [Rugby Display]
+      operationId: rugbyPastFeatured
+      summary: Recent featured rugby scorecards (carousel + ticker)
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 10, maximum: 50 }
+      responses:
+        "200":
+          description: Featured rugby summaries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RugbyFeaturedSummary" }
+
+  /match/rugby/summaries:
+    get:
+      tags: [Rugby Display]
+      operationId: rugbySummaries
+      summary: Rugby summary cards (mixed past/live/upcoming)
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 10, maximum: 20 }
+        - name: tournament
+          in: query
+          required: false
+          description: Tournament slug; when omitted, mixes tournaments.
+          schema: { type: string }
+        - name: include
+          in: query
+          required: false
+          description: Comma-separated subset of PAST,LIVE,UPCOMING.
+          schema: { type: string, default: "PAST,LIVE,UPCOMING" }
+      responses:
+        "200":
+          description: Rugby summary cards (newest/next-up first).
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RugbyMatchSummary" }
+
+  /match/rugby/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Rugby Display]
+      operationId: rugbyMatchDetail
+      summary: Full rugby match detail (scorecard, commentary, analysis, MVP)
+      responses:
+        "200":
+          description: Rugby match detail.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RugbyMatchDetail" }
+        "404": { $ref: "#/components/responses/NotFoundMatch" }
+
+  /match/rugby/{slug}/live:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Rugby Display]
+      operationId: rugbyLive
+      summary: Lightweight live rugby score (poll/SSE)
+      description: "Should set `Cache-Control: no-store`."
+      responses:
+        "200":
+          description: Live rugby score.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RugbyLive" }
+
+  # ==================== SOCCER DISPLAY ====================
+  /match/list-soccer:
+    get:
+      tags: [Soccer Display]
+      operationId: matchListSoccer
+      summary: Soccer schedule feed (past + upcoming)
+      description: >-
+        The soccer schedule view. Returns the soccer schedule and filters out any
+        non-soccer `sport` value. The client filters upcoming vs. past by `startTime`.
+      parameters:
+        - name: sport
+          in: query
+          required: false
+          description: When provided, only SOCCER returns rows.
+          schema: { type: string }
+        - name: tournament
+          in: query
+          required: false
+          description: Tournament slug.
+          schema: { type: string }
+        - name: from
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/MatchStatus" }
+      responses:
+        "200":
+          description: Schedule items.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MatchScheduleItem" }
+
+  /match/soccer/past-featured:
+    get:
+      tags: [Soccer Display]
+      operationId: soccerPastFeatured
+      summary: Recent featured soccer scorecards (carousel + ticker)
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 10, maximum: 50 }
+      responses:
+        "200":
+          description: Featured soccer summaries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SoccerFeaturedSummary" }
+
+  /match/soccer/summaries:
+    get:
+      tags: [Soccer Display]
+      operationId: soccerSummaries
+      summary: Soccer summary cards (mixed past/live/upcoming)
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 10, maximum: 20 }
+        - name: tournament
+          in: query
+          required: false
+          description: Tournament slug; when omitted, mixes tournaments.
+          schema: { type: string }
+        - name: include
+          in: query
+          required: false
+          description: Comma-separated subset of PAST,LIVE,UPCOMING.
+          schema: { type: string, default: "PAST,LIVE,UPCOMING" }
+      responses:
+        "200":
+          description: Soccer summary cards (newest/next-up first).
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SoccerMatchSummary" }
+
+  /match/soccer/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Soccer Display]
+      operationId: soccerMatchDetail
+      summary: Full soccer match detail (lineups, events, stats, MVP)
+      responses:
+        "200":
+          description: Soccer match detail.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SoccerMatchDetail" }
+        "404": { $ref: "#/components/responses/NotFoundMatch" }
+
+  /match/soccer/{slug}/live:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Soccer Display]
+      operationId: soccerLive
+      summary: Lightweight live soccer score (poll/SSE)
+      description: "Should set `Cache-Control: no-store`."
+      responses:
+        "200":
+          description: Live soccer score.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SoccerLive" }
 
   # ==================== GOLF DISPLAY ====================
   /match/golf/summaries:
@@ -1624,6 +1905,216 @@ paths:
       operationId: cricScoreDelete
       deprecated: true
       summary: "[Deprecated] Delete a legacy cric-score"
+      responses:
+        "200":
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Score deleted" }
+
+  # ==================== RUGBY LEGACY (deprecated) ====================
+  /rugby-scores:
+    get:
+      tags: [Rugby Legacy]
+      operationId: rugbyScoresList
+      deprecated: true
+      summary: "[Deprecated] List legacy rugby-scores"
+      description: >-
+        Legacy route, `/api`-only (not mirrored at the host root). Superseded by the
+        rugby display endpoints and the generic `/matches` resource.
+      responses:
+        "200":
+          description: Legacy scores.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RugbyScore" }
+    post:
+      tags: [Rugby Legacy]
+      operationId: rugbyScoreCreate
+      deprecated: true
+      summary: "[Deprecated] Create a legacy rugby-score"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RugbyScoreInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RugbyScore" }
+
+  /rugby-scores/status/{status}:
+    get:
+      tags: [Rugby Legacy]
+      operationId: rugbyScoresByStatus
+      deprecated: true
+      summary: "[Deprecated] List legacy rugby-scores by status"
+      parameters:
+        - name: status
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [upcoming, live, completed]
+      responses:
+        "200":
+          description: Legacy scores with the given status.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RugbyScore" }
+
+  /rugby-scores/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Rugby Legacy]
+      operationId: rugbyScoreGet
+      deprecated: true
+      summary: "[Deprecated] Fetch a legacy rugby-score by id"
+      responses:
+        "200":
+          description: Legacy score.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RugbyScore" }
+    put:
+      tags: [Rugby Legacy]
+      operationId: rugbyScoreReplace
+      deprecated: true
+      summary: "[Deprecated] Replace a legacy rugby-score"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RugbyScoreInput" }
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RugbyScore" }
+    delete:
+      tags: [Rugby Legacy]
+      operationId: rugbyScoreDelete
+      deprecated: true
+      summary: "[Deprecated] Delete a legacy rugby-score"
+      responses:
+        "200":
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Score deleted" }
+
+  # ==================== SOCCER LEGACY (deprecated) ====================
+  /soccer-scores:
+    get:
+      tags: [Soccer Legacy]
+      operationId: soccerScoresList
+      deprecated: true
+      summary: "[Deprecated] List legacy soccer-scores"
+      description: >-
+        Legacy route, `/api`-only (not mirrored at the host root). Superseded by the
+        soccer display endpoints and the generic `/matches` resource.
+      responses:
+        "200":
+          description: Legacy scores.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SoccerScore" }
+    post:
+      tags: [Soccer Legacy]
+      operationId: soccerScoreCreate
+      deprecated: true
+      summary: "[Deprecated] Create a legacy soccer-score"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SoccerScoreInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SoccerScore" }
+
+  /soccer-scores/status/{status}:
+    get:
+      tags: [Soccer Legacy]
+      operationId: soccerScoresByStatus
+      deprecated: true
+      summary: "[Deprecated] List legacy soccer-scores by status"
+      parameters:
+        - name: status
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [upcoming, live, completed]
+      responses:
+        "200":
+          description: Legacy scores with the given status.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SoccerScore" }
+
+  /soccer-scores/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Soccer Legacy]
+      operationId: soccerScoreGet
+      deprecated: true
+      summary: "[Deprecated] Fetch a legacy soccer-score by id"
+      responses:
+        "200":
+          description: Legacy score.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SoccerScore" }
+    put:
+      tags: [Soccer Legacy]
+      operationId: soccerScoreReplace
+      deprecated: true
+      summary: "[Deprecated] Replace a legacy soccer-score"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SoccerScoreInput" }
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SoccerScore" }
+    delete:
+      tags: [Soccer Legacy]
+      operationId: soccerScoreDelete
+      deprecated: true
+      summary: "[Deprecated] Delete a legacy soccer-score"
       responses:
         "200":
           description: Deleted.
@@ -1830,6 +2321,16 @@ components:
       required: [token]
       properties:
         token: { type: string, description: "JWT for the newly created account." }
+    User:
+      type: object
+      description: User record as returned by GET /user. `passHash` is never exposed.
+      required: [id, username, priv]
+      properties:
+        id: { type: string, description: "Stable user id." }
+        username: { type: string }
+        priv: { type: string, default: USER, description: "'Privilege / role marker (e.g. \"USER\", \"admin\").'" }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
 
     # -------- Media --------
     MediaFolder:
@@ -3010,6 +3511,687 @@ components:
           items: { type: string }
         lastUpdated: { type: string, format: date-time }
 
+    # ==================== SHARED (rugby/soccer display) ====================
+    HomeAwayInt:
+      type: object
+      description: A home/away integer pair (counts or percentages).
+      properties:
+        home: { type: integer }
+        away: { type: integer }
+    PeriodTiming:
+      type: object
+      description: Timing row for a match period (half, halftime, extra time, etc.).
+      properties:
+        label: { type: string, description: "'e.g. \"1st Half\", \"Halftime\", \"Extra Time\".'" }
+        durationMins: { type: integer }
+        from: { type: string, description: "Pre-formatted display string." }
+        to: { type: string }
+
+    # ==================== RUGBY DISPLAY ====================
+    RugbyScoreboardScorer:
+      type: object
+      properties:
+        order: { type: integer }
+        name: { type: string }
+        tries: { type: integer }
+        conversions: { type: integer }
+        penalties: { type: integer }
+        dropGoals: { type: integer }
+        points: { type: integer }
+    RugbyScoreboardTeam:
+      type: object
+      properties:
+        kickFirst: { type: boolean }
+        final: { type: integer, description: "Total points." }
+        finalTries: { type: integer }
+        finalConversions: { type: integer }
+        finalPenalties: { type: integer }
+        finalDropGoals: { type: integer }
+        scorers:
+          type: array
+          description: May be truncated server-side (carousel shows top scorers).
+          items: { $ref: "#/components/schemas/RugbyScoreboardScorer" }
+    RugbyScoreboard:
+      type: object
+      properties:
+        winner: { type: string, description: "Team name; empty when resultKind != WIN." }
+        homeTeam: { $ref: "#/components/schemas/RugbyScoreboardTeam" }
+        awayTeam: { $ref: "#/components/schemas/RugbyScoreboardTeam" }
+    RugbyFeaturedSummary:
+      type: object
+      description: Rugby variant of the past-featured summary.
+      required: [slug, sport]
+      properties:
+        embedSlug: { type: string }
+        slug: { type: string, description: "Canonical slug for match detail." }
+        sport: { type: string }
+        tournament: { type: string }
+        homeTeam: { type: string }
+        awayTeam: { type: string }
+        startTime: { type: string, format: date-time }
+        group: { type: [string, "null"] }
+        venue: { type: string }
+        derived: { $ref: "#/components/schemas/FeaturedDerived" }
+        scoreboard: { $ref: "#/components/schemas/RugbyScoreboard" }
+    RugbySummaryHalf:
+      type: object
+      properties:
+        points: { type: integer }
+        tries: { type: integer }
+        conversions: { type: integer }
+        penalties: { type: integer }
+        dropGoals: { type: integer }
+        label: { type: string, description: "'e.g. \"1st Half\".'" }
+    RugbySummaryTeam:
+      type: object
+      properties:
+        name: { type: string }
+        shortName: { type: string }
+        logoUrl: { type: string, description: "Empty string allowed; client falls back by name." }
+        halves:
+          type: array
+          description: Empty for upcoming matches.
+          items: { $ref: "#/components/schemas/RugbySummaryHalf" }
+    RugbySummaryResult:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [WIN, DRAW, TIE, NO_RESULT]
+        label: { type: string, description: "Already cased for display." }
+    RugbyMatchSummary:
+      type: object
+      description: Rugby summary card.
+      required: [slug, sport, status, homeTeam, awayTeam]
+      properties:
+        slug: { type: string }
+        embedSlug: { type: string }
+        sport: { type: string }
+        tournament: { type: string }
+        tournamentLabel: { type: string }
+        status:
+          type: string
+          enum: [UPCOMING, LIVE, RESULT]
+        startTime: { type: string, format: date-time }
+        venue: { type: string }
+        venueLabel: { type: string }
+        homeTeam: { $ref: "#/components/schemas/RugbySummaryTeam" }
+        awayTeam: { $ref: "#/components/schemas/RugbySummaryTeam" }
+        result:
+          oneOf:
+            - { $ref: "#/components/schemas/RugbySummaryResult" }
+            - { type: "null" }
+          description: Omit/null unless status is RESULT.
+    RugbyTeamScore:
+      type: object
+      properties:
+        name: { type: string }
+        score: { type: string, description: "Total points as a string." }
+        tries: { type: integer }
+        halftime: { type: integer, description: "Points at halftime." }
+    RugbyScorerStat:
+      type: object
+      properties:
+        name: { type: string }
+        team: { type: string }
+        tries: { type: integer }
+        conversions: { type: integer }
+        penalties: { type: integer }
+        dropGoals: { type: integer }
+        points: { type: integer }
+    RugbyTacklerStat:
+      type: object
+      properties:
+        name: { type: string }
+        team: { type: string }
+        tackles: { type: integer }
+        missed: { type: integer }
+        turnovers: { type: integer }
+    RugbyScorecardScorer:
+      type: object
+      properties:
+        name: { type: string }
+        position: { type: string }
+        minute: { type: integer }
+        kind: { type: string, description: "'Try | Conversion | Penalty | Drop Goal.'" }
+        points: { type: integer }
+    RugbyScorecardHalf:
+      type: object
+      properties:
+        teamName: { type: string }
+        score: { type: string }
+        breakdown: { type: string, description: "'e.g. \"3T 3C 2P 0DG\".'" }
+        scorers:
+          type: array
+          items: { $ref: "#/components/schemas/RugbyScorecardScorer" }
+        squad:
+          type: array
+          items: { type: string }
+    RugbyCommentaryEntry:
+      oneOf:
+        - { $ref: "#/components/schemas/RugbyCommentaryEvent" }
+        - { $ref: "#/components/schemas/RugbyCommentaryMinuteEnd" }
+        - { $ref: "#/components/schemas/RugbyCommentaryNotification" }
+      discriminator:
+        propertyName: kind
+        mapping:
+          event: "#/components/schemas/RugbyCommentaryEvent"
+          minute-end: "#/components/schemas/RugbyCommentaryMinuteEnd"
+          notification: "#/components/schemas/RugbyCommentaryNotification"
+    RugbyCommentaryEvent:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [event] }
+        minute: { type: string }
+        badge:
+          type: string
+          enum: [try, conversion, penalty, drop, yellow, red, pending]
+        badgeLabel: { type: string, description: "'e.g. TRY | C | P | DG.'" }
+        description: { type: string }
+        isScoring: { type: boolean }
+    RugbyCommentaryMinuteEnd:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [minute-end] }
+        minute: { type: integer }
+        score: { type: string, description: "'e.g. \"24-35\".'" }
+        halfLabel: { type: string, description: "'e.g. \"Half Time\", \"Full Time\".'" }
+    RugbyCommentaryNotification:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [notification] }
+        text: { type: string }
+    RugbyCommentaryGroup:
+      type: object
+      properties:
+        teamName: { type: string }
+        entries:
+          type: array
+          description: Newest first.
+          items: { $ref: "#/components/schemas/RugbyCommentaryEntry" }
+    RugbyAnalysisPoint:
+      type: object
+      properties:
+        minute: { type: integer }
+        points: { type: integer, description: "Cumulative points up to this minute." }
+        runRate: { type: number, description: "Points per minute up to this point." }
+    RugbyScoringType:
+      type: object
+      properties:
+        label: { type: string }
+        count: { type: integer }
+    RugbyMatchAnalysis:
+      type: object
+      properties:
+        half1:
+          type: array
+          items: { $ref: "#/components/schemas/RugbyAnalysisPoint" }
+        half2:
+          type: array
+          items: { $ref: "#/components/schemas/RugbyAnalysisPoint" }
+        scoringTypes:
+          type: array
+          items: { $ref: "#/components/schemas/RugbyScoringType" }
+    RugbyHeroPlayer:
+      type: object
+      description: >-
+        Hero card. `stats` carries scoring fields (tries/conversions/penalties/
+        dropGoals/points) for scorers, or defensive fields (tackles/missed/turnovers)
+        for the top tackler.
+      properties:
+        name: { type: string }
+        team: { type: string }
+        imageUrl: { type: string, description: "Empty string allowed." }
+        stats:
+          type: object
+          properties:
+            tries: { type: integer }
+            conversions: { type: integer }
+            penalties: { type: integer }
+            dropGoals: { type: integer }
+            points: { type: integer }
+            tackles: { type: integer }
+            missed: { type: integer }
+            turnovers: { type: integer }
+    RugbyMatchHeroes:
+      type: object
+      properties:
+        playerOfMatch: { $ref: "#/components/schemas/RugbyHeroPlayer" }
+        topTryScorer: { $ref: "#/components/schemas/RugbyHeroPlayer" }
+        topTackler: { $ref: "#/components/schemas/RugbyHeroPlayer" }
+    RugbyMvpPlayer:
+      type: object
+      properties:
+        rank: { type: integer }
+        name: { type: string }
+        team: { type: string }
+        imageUrl: { type: string }
+        attack: { type: number }
+        defense: { type: number }
+        kicking: { type: number }
+        total: { type: number }
+    RugbyMatchDetail:
+      type: object
+      description: >-
+        Full rugby match page. startTime/matchDate/lastUpdated and halves[].from/to are
+        pre-formatted display strings rendered verbatim.
+      required: [slug]
+      properties:
+        slug: { type: string }
+        sport: { type: string }
+        tournament: { type: string }
+        seriesName: { type: string }
+        status:
+          type: string
+          enum: [Past, Live, Upcoming]
+        stage: { type: string }
+        venue: { type: string }
+        city: { type: string }
+        location: { type: string }
+        duration: { type: string, description: "'e.g. \"80 Min\".'" }
+        startTime: { type: string, description: "Display string." }
+        matchDate: { type: string, description: "Display string." }
+        homeTeam: { $ref: "#/components/schemas/RugbyTeamScore" }
+        awayTeam: { $ref: "#/components/schemas/RugbyTeamScore" }
+        toss: { type: string }
+        result: { type: string, description: "Empty string allowed." }
+        topScorers:
+          type: array
+          items: { $ref: "#/components/schemas/RugbyScorerStat" }
+        topTacklers:
+          type: array
+          items: { $ref: "#/components/schemas/RugbyTacklerStat" }
+        scorecardHalves:
+          type: array
+          items: { $ref: "#/components/schemas/RugbyScorecardHalf" }
+        commentary:
+          type: array
+          items: { $ref: "#/components/schemas/RugbyCommentaryGroup" }
+        analysis: { $ref: "#/components/schemas/RugbyMatchAnalysis" }
+        heroes: { $ref: "#/components/schemas/RugbyMatchHeroes" }
+        mvp:
+          type: array
+          items: { $ref: "#/components/schemas/RugbyMvpPlayer" }
+        videoEmbedUrl: { type: string, description: "Empty string when no video; else youtube/vimeo host only." }
+        streamTitle: { type: string }
+        rightsHolder: { type: string }
+        totalViews: { type: integer }
+        liveViewers: { type: integer }
+        halves:
+          type: array
+          items: { $ref: "#/components/schemas/PeriodTiming" }
+        lastUpdated: { type: string, description: "Display string." }
+        lastUpdatedBy: { type: string }
+    RugbyLiveTeam:
+      type: object
+      properties:
+        name: { type: string }
+        score: { type: integer }
+        tries: { type: integer }
+        conversions: { type: integer }
+        penalties: { type: integer }
+        dropGoals: { type: integer }
+    RugbyLive:
+      type: object
+      properties:
+        slug: { type: string }
+        sport: { type: string }
+        status: { type: string, example: LIVE }
+        half: { type: string, description: "'e.g. \"2nd Half\".'" }
+        minute: { type: integer }
+        homeTeam: { $ref: "#/components/schemas/RugbyLiveTeam" }
+        awayTeam: { $ref: "#/components/schemas/RugbyLiveTeam" }
+        possession: { $ref: "#/components/schemas/HomeAwayInt" }
+        territory: { $ref: "#/components/schemas/HomeAwayInt" }
+        lastEvents:
+          type: array
+          description: Most recent events, newest right.
+          items: { type: string }
+        lastUpdated: { type: string, format: date-time }
+
+    # ==================== SOCCER DISPLAY ====================
+    SoccerScoreboardScorer:
+      type: object
+      properties:
+        order: { type: integer }
+        name: { type: string }
+        goals: { type: integer }
+        assists: { type: integer }
+        minutes:
+          type: array
+          description: Minute markers for each goal (display strings).
+          items: { type: string }
+    SoccerScoreboardTeam:
+      type: object
+      properties:
+        kickOff: { type: boolean }
+        final: { type: integer, description: "Final goals." }
+        finalGoals: { type: integer }
+        finalShots: { type: integer }
+        finalShotsOnTarget: { type: integer }
+        finalCorners: { type: integer }
+        finalYellowCards: { type: integer }
+        finalRedCards: { type: integer }
+        scorers:
+          type: array
+          items: { $ref: "#/components/schemas/SoccerScoreboardScorer" }
+    SoccerScoreboard:
+      type: object
+      properties:
+        winner: { type: string }
+        homeTeam: { $ref: "#/components/schemas/SoccerScoreboardTeam" }
+        awayTeam: { $ref: "#/components/schemas/SoccerScoreboardTeam" }
+    SoccerFeaturedSummary:
+      type: object
+      description: Soccer variant of the past-featured summary.
+      required: [slug, sport]
+      properties:
+        embedSlug: { type: string }
+        slug: { type: string }
+        sport: { type: string }
+        tournament: { type: string }
+        homeTeam: { type: string }
+        awayTeam: { type: string }
+        startTime: { type: string, format: date-time }
+        group: { type: [string, "null"] }
+        venue: { type: string }
+        derived: { $ref: "#/components/schemas/FeaturedDerived" }
+        scoreboard: { $ref: "#/components/schemas/SoccerScoreboard" }
+    SoccerSummaryHalf:
+      type: object
+      properties:
+        goals: { type: integer }
+        shots: { type: integer }
+        shotsOnTarget: { type: integer }
+        corners: { type: integer }
+        label: { type: string, description: "'e.g. \"1st Half\", \"Extra Time\".'" }
+    SoccerSummaryTeam:
+      type: object
+      properties:
+        name: { type: string }
+        shortName: { type: string }
+        logoUrl: { type: string, description: "Empty string allowed; client falls back by name." }
+        halves:
+          type: array
+          description: Empty for upcoming matches.
+          items: { $ref: "#/components/schemas/SoccerSummaryHalf" }
+    SoccerSummaryResult:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [WIN, DRAW, TIE, NO_RESULT]
+        label: { type: string, description: "Already cased for display." }
+    SoccerMatchSummary:
+      type: object
+      description: Soccer summary card.
+      required: [slug, sport, status, homeTeam, awayTeam]
+      properties:
+        slug: { type: string }
+        embedSlug: { type: string }
+        sport: { type: string }
+        tournament: { type: string }
+        tournamentLabel: { type: string }
+        status:
+          type: string
+          enum: [UPCOMING, LIVE, RESULT]
+        startTime: { type: string, format: date-time }
+        venue: { type: string }
+        venueLabel: { type: string }
+        homeTeam: { $ref: "#/components/schemas/SoccerSummaryTeam" }
+        awayTeam: { $ref: "#/components/schemas/SoccerSummaryTeam" }
+        result:
+          oneOf:
+            - { $ref: "#/components/schemas/SoccerSummaryResult" }
+            - { type: "null" }
+          description: Omit/null unless status is RESULT.
+    SoccerTeamScore:
+      type: object
+      properties:
+        name: { type: string }
+        score: { type: string, description: "Final goals as a string." }
+        halftime: { type: integer }
+        penalties: { type: integer, description: "Optional; shootout goals when applicable." }
+    SoccerScorerStat:
+      type: object
+      properties:
+        name: { type: string }
+        team: { type: string }
+        goals: { type: integer }
+        assists: { type: integer }
+        shots: { type: integer }
+        shotsOnTarget: { type: integer }
+    SoccerKeeperStat:
+      type: object
+      properties:
+        name: { type: string }
+        team: { type: string }
+        saves: { type: integer }
+        goalsConceded: { type: integer }
+        cleanSheet: { type: boolean }
+        penaltiesSaved: { type: integer }
+    SoccerTeamStats:
+      type: object
+      description: Each field is a home/away pair.
+      properties:
+        possession: { $ref: "#/components/schemas/HomeAwayInt" }
+        shots: { $ref: "#/components/schemas/HomeAwayInt" }
+        shotsOnTarget: { $ref: "#/components/schemas/HomeAwayInt" }
+        corners: { $ref: "#/components/schemas/HomeAwayInt" }
+        fouls: { $ref: "#/components/schemas/HomeAwayInt" }
+        offsides: { $ref: "#/components/schemas/HomeAwayInt" }
+        yellowCards: { $ref: "#/components/schemas/HomeAwayInt" }
+        redCards: { $ref: "#/components/schemas/HomeAwayInt" }
+    SoccerLineupPlayer:
+      type: object
+      properties:
+        number: { type: integer }
+        name: { type: string }
+        position: { type: string, description: "'e.g. GK, CB, CAM, ST.'" }
+        captain: { type: boolean, default: false }
+    SoccerLineup:
+      type: object
+      properties:
+        teamName: { type: string }
+        formation: { type: string, description: "'e.g. \"4-3-3\".'" }
+        starters:
+          type: array
+          items: { $ref: "#/components/schemas/SoccerLineupPlayer" }
+        substitutes:
+          type: array
+          items: { $ref: "#/components/schemas/SoccerLineupPlayer" }
+    SoccerMatchEvent:
+      type: object
+      description: >-
+        Match timeline entry. Fields present depend on `kind` (goal/yellow/red/sub/
+        fulltime/penalty-shootout).
+      properties:
+        minute: { type: string, description: "'e.g. \"45+2\", \"PEN\".'" }
+        kind:
+          type: string
+          enum: [goal, yellow, red, sub, fulltime, penalty-shootout]
+        team: { type: string }
+        player: { type: string }
+        assist: { type: string }
+        description: { type: string }
+        playerOff: { type: string, description: "Substitutions only." }
+        playerOn: { type: string, description: "Substitutions only." }
+        score: { type: string, description: "Present on fulltime / penalty-shootout." }
+    SoccerCommentaryEvent:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [event] }
+        minute: { type: string }
+        badge:
+          type: string
+          enum: [goal, yellow, red, corner, whistle, trophy]
+        badgeLabel: { type: string, description: "'e.g. GOAL | YC | RC | FT.'" }
+        description: { type: string }
+        isScoring: { type: boolean }
+    SoccerCommentaryGroup:
+      type: object
+      properties:
+        teamName: { type: string }
+        entries:
+          type: array
+          description: Newest first.
+          items: { $ref: "#/components/schemas/SoccerCommentaryEvent" }
+    SoccerAnalysisPoint:
+      type: object
+      properties:
+        minute: { type: integer }
+        homeShots: { type: integer }
+        awayShots: { type: integer }
+        possessionHome: { type: integer, description: "Home possession percent at this minute." }
+    SoccerGoalType:
+      type: object
+      properties:
+        label: { type: string }
+        count: { type: integer }
+    SoccerMatchAnalysis:
+      type: object
+      properties:
+        half1:
+          type: array
+          items: { $ref: "#/components/schemas/SoccerAnalysisPoint" }
+        half2:
+          type: array
+          items: { $ref: "#/components/schemas/SoccerAnalysisPoint" }
+        extraTime:
+          type: array
+          description: Present only when the match went to extra time.
+          items: { $ref: "#/components/schemas/SoccerAnalysisPoint" }
+        goalTypes:
+          type: array
+          items: { $ref: "#/components/schemas/SoccerGoalType" }
+    SoccerHeroPlayer:
+      type: object
+      description: >-
+        Hero card. `stats` carries the fields relevant to the role (goals/assists/
+        shots for scorers, saves/penaltiesSaved for keepers, keyPasses/crosses for
+        the top assister).
+      properties:
+        name: { type: string }
+        team: { type: string }
+        imageUrl: { type: string, description: "Empty string allowed." }
+        stats:
+          type: object
+          properties:
+            goals: { type: integer }
+            assists: { type: integer }
+            shots: { type: integer }
+            shotsOnTarget: { type: integer }
+            saves: { type: integer }
+            penaltiesSaved: { type: integer }
+            goalsConceded: { type: integer }
+            keyPasses: { type: integer }
+            crosses: { type: integer }
+    SoccerMatchHeroes:
+      type: object
+      properties:
+        playerOfMatch: { $ref: "#/components/schemas/SoccerHeroPlayer" }
+        topScorer: { $ref: "#/components/schemas/SoccerHeroPlayer" }
+        topAssist: { $ref: "#/components/schemas/SoccerHeroPlayer" }
+    SoccerMvpPlayer:
+      type: object
+      properties:
+        rank: { type: integer }
+        name: { type: string }
+        team: { type: string }
+        imageUrl: { type: string }
+        attack: { type: number }
+        defense: { type: number }
+        distribution: { type: number }
+        total: { type: number }
+    SoccerMatchDetail:
+      type: object
+      description: >-
+        Full soccer match page. startTime/matchDate/lastUpdated and halves[].from/to
+        are pre-formatted display strings rendered verbatim.
+      required: [slug]
+      properties:
+        slug: { type: string }
+        sport: { type: string }
+        tournament: { type: string }
+        seriesName: { type: string }
+        status:
+          type: string
+          enum: [Past, Live, Upcoming]
+        stage: { type: string }
+        venue: { type: string }
+        city: { type: string }
+        location: { type: string }
+        duration: { type: string, description: "'e.g. \"90 Min\", \"90 + ET + Penalties\".'" }
+        startTime: { type: string, description: "Display string." }
+        matchDate: { type: string, description: "Display string." }
+        homeTeam: { $ref: "#/components/schemas/SoccerTeamScore" }
+        awayTeam: { $ref: "#/components/schemas/SoccerTeamScore" }
+        referee: { type: string }
+        attendance: { type: integer }
+        result: { type: string, description: "Empty string allowed." }
+        topScorers:
+          type: array
+          items: { $ref: "#/components/schemas/SoccerScorerStat" }
+        keepers:
+          type: array
+          items: { $ref: "#/components/schemas/SoccerKeeperStat" }
+        teamStats: { $ref: "#/components/schemas/SoccerTeamStats" }
+        lineups:
+          type: array
+          items: { $ref: "#/components/schemas/SoccerLineup" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/SoccerMatchEvent" }
+        commentary:
+          type: array
+          items: { $ref: "#/components/schemas/SoccerCommentaryGroup" }
+        analysis: { $ref: "#/components/schemas/SoccerMatchAnalysis" }
+        heroes: { $ref: "#/components/schemas/SoccerMatchHeroes" }
+        mvp:
+          type: array
+          items: { $ref: "#/components/schemas/SoccerMvpPlayer" }
+        videoEmbedUrl: { type: string, description: "Empty string when no video; else youtube/vimeo host only." }
+        streamTitle: { type: string }
+        rightsHolder: { type: string }
+        totalViews: { type: integer }
+        liveViewers: { type: integer }
+        halves:
+          type: array
+          items: { $ref: "#/components/schemas/PeriodTiming" }
+        lastUpdated: { type: string, description: "Display string." }
+        lastUpdatedBy: { type: string }
+    SoccerLiveTeam:
+      type: object
+      properties:
+        name: { type: string }
+        score: { type: integer }
+        shots: { type: integer }
+        shotsOnTarget: { type: integer }
+        corners: { type: integer }
+        yellowCards: { type: integer }
+        redCards: { type: integer }
+    SoccerLive:
+      type: object
+      properties:
+        slug: { type: string }
+        sport: { type: string }
+        status: { type: string, example: LIVE }
+        half: { type: string, description: "'e.g. \"2nd Half\".'" }
+        minute: { type: integer }
+        addedTime: { type: integer }
+        homeTeam: { $ref: "#/components/schemas/SoccerLiveTeam" }
+        awayTeam: { $ref: "#/components/schemas/SoccerLiveTeam" }
+        possession: { $ref: "#/components/schemas/HomeAwayInt" }
+        lastEvents:
+          type: array
+          description: Most recent events, newest right.
+          items: { type: string }
+        lastUpdated: { type: string, format: date-time }
+
     # ==================== GOLF ====================
     GolfFormat:
       type: string
@@ -3470,4 +4652,105 @@ components:
         matchType:
           type: string
           enum: [ODI, T20, Test, Other]
+        result: { type: [string, "null"] }
+
+    # ==================== RUGBY LEGACY ====================
+    RugbyScoreTeam:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        score: { type: integer, default: 0 }
+        tries: { type: integer, default: 0 }
+        conversions: { type: integer, default: 0 }
+        penalties: { type: integer, default: 0 }
+        dropGoals: { type: integer, default: 0 }
+    RugbyScore:
+      type: object
+      description: Deprecated legacy rugby-score record.
+      properties:
+        id: { type: string }
+        matchTitle: { type: string }
+        team1: { $ref: "#/components/schemas/RugbyScoreTeam" }
+        team2: { $ref: "#/components/schemas/RugbyScoreTeam" }
+        status:
+          type: string
+          enum: [upcoming, live, completed]
+        venue: { type: [string, "null"] }
+        matchDate: { type: [string, "null"], format: date-time }
+        matchType:
+          type: string
+          enum: [Test, Sevens, Tens, League, Union, Other]
+        result: { type: [string, "null"] }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
+    RugbyScoreInput:
+      type: object
+      required: [matchTitle]
+      properties:
+        matchTitle: { type: string }
+        team1: { $ref: "#/components/schemas/RugbyScoreTeam" }
+        team2: { $ref: "#/components/schemas/RugbyScoreTeam" }
+        status:
+          type: string
+          enum: [upcoming, live, completed]
+          default: upcoming
+        venue: { type: [string, "null"] }
+        matchDate: { type: [string, "null"], format: date-time }
+        matchType:
+          type: string
+          enum: [Test, Sevens, Tens, League, Union, Other]
+          default: Other
+        result: { type: [string, "null"] }
+
+    # ==================== SOCCER LEGACY ====================
+    SoccerScoreTeam:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        goals: { type: integer, default: 0 }
+        shots: { type: integer, default: 0 }
+        shotsOnTarget: { type: integer, default: 0 }
+        possession: { type: integer, default: 0, description: "Percent (0-100)." }
+        corners: { type: integer, default: 0 }
+        fouls: { type: integer, default: 0 }
+        yellowCards: { type: integer, default: 0 }
+        redCards: { type: integer, default: 0 }
+    SoccerScore:
+      type: object
+      description: Deprecated legacy soccer-score record.
+      properties:
+        id: { type: string }
+        matchTitle: { type: string }
+        team1: { $ref: "#/components/schemas/SoccerScoreTeam" }
+        team2: { $ref: "#/components/schemas/SoccerScoreTeam" }
+        status:
+          type: string
+          enum: [upcoming, live, completed]
+        venue: { type: [string, "null"] }
+        matchDate: { type: [string, "null"], format: date-time }
+        matchType:
+          type: string
+          enum: [League, Cup, Friendly, International, Knockout, Other]
+        result: { type: [string, "null"] }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
+    SoccerScoreInput:
+      type: object
+      required: [matchTitle]
+      properties:
+        matchTitle: { type: string }
+        team1: { $ref: "#/components/schemas/SoccerScoreTeam" }
+        team2: { $ref: "#/components/schemas/SoccerScoreTeam" }
+        status:
+          type: string
+          enum: [upcoming, live, completed]
+          default: upcoming
+        venue: { type: [string, "null"] }
+        matchDate: { type: [string, "null"], format: date-time }
+        matchType:
+          type: string
+          enum: [League, Cup, Friendly, International, Knockout, Other]
+          default: Other
         result: { type: [string, "null"] }
