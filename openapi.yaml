@@ -1,0 +1,3473 @@
+openapi: 3.1.0
+
+info:
+  title: Scoreboard API
+  version: 1.0.0
+  summary: Unified API for the Scoreboard sports platform (admin CMS + public site).
+  description: |
+    Consolidated OpenAPI specification for the Scoreboard platform, derived from the
+    per-resource markdown specs under `Legacy/`. It covers content management
+    (articles, clubs, players, teams, tournaments, venues, photos, videos, sponsors,
+    other events), the generic `/matches` resource, sport-specific read surfaces
+    (cricket & golf), polls, authentication, and the S3 media-presign contract.
+
+    ## Base URL & the `/api` prefix
+    The base URL is configured via the `API_BASE_URI` environment variable
+    (example: `http://localhost:8081/api`). Endpoints are written here as bare
+    resource paths (e.g. `/matches`) which compose onto the base URL.
+
+    Every route is reachable **both with and without** an `/api` prefix
+    (`/matches` ≡ `/api/matches`) — **except** the deprecated `/cric-scores`
+    family, which is served **only** under the `/api` prefix and is not mirrored
+    at the host root.
+
+    ## Authentication
+    Protected endpoints require a JWT sent in the **`x-access-token`** header
+    (NOT `Authorization: Bearer …`). The token is issued by `POST /auth/signin1988`
+    and `POST /auth/signup351`.
+
+    Today, only media-presign / delete and the per-resource `/<resource>/upload`
+    aliases (plus `POST /matches/upload-schedule`) are enforced in code. Resource
+    CRUD is **not** protected in the current implementation — this is documented as
+    an existing gap, not the intended long-term contract, and such routes SHOULD be
+    locked behind `x-access-token` in production.
+
+    ## Slugs
+    Most resources are addressed by a backend-generated URL-friendly `slug`
+    (not a numeric id). Sponsors are the exception and use an opaque `id`.
+    Polls use a stable `id` (uuid or slug).
+
+    ## Media flow (presign)
+    Image/video assets are uploaded **directly browser → S3** via a short-lived
+    presigned `PUT`. The API only signs the URL; file bytes never traverse the API
+    server. Every presign response carries two URLs on different hosts: `uploadUrl`
+    (the S3 PUT target) and `url` (the canonical public/CDN URL to persist on the
+    resource).
+
+    ## Error format
+    All non-2xx responses use the project-wide error shape:
+    `{ "error": "human-readable message", "code": "OPTIONAL_MACHINE_CODE" }`.
+  contact:
+    name: Scoreboard Platform
+  license:
+    name: Proprietary
+
+servers:
+  - url: "{API_BASE_URI}"
+    description: Configurable API base. Default matches the local dev convention.
+    variables:
+      API_BASE_URI:
+        default: http://localhost:8081/api
+        description: >-
+          Root of the API. May or may not include a trailing `/api` segment.
+          All documented paths are reachable with and without an `/api` prefix
+          except the deprecated `/cric-scores` family (which is `/api`-only).
+
+tags:
+  - name: Auth
+    description: Sign-in / sign-up. Issues the `x-access-token` JWT.
+  - name: Media
+    description: S3 presign / delete contract and per-resource upload aliases.
+  - name: Articles
+    description: Editorial articles (news, match reports, features).
+  - name: Clubs
+    description: Sporting clubs.
+  - name: Players
+    description: Players (also created inline from the match form).
+  - name: Teams
+    description: Teams.
+  - name: Tournaments
+    description: Tournaments / competitions. Source of cricket-format inheritance.
+  - name: Venues
+    description: Venues (UAE-aware via the `emirate` enum).
+  - name: Photos
+    description: Public photo gallery entries.
+  - name: Videos
+    description: Videos (YouTube id or hosted file via `source`).
+  - name: Sponsors
+    description: Lean sponsor list (id-addressed; list/create/delete only).
+  - name: Other Events
+    description: Non-match calendar items (training, ceremonies, etc.).
+  - name: Matches
+    description: Generic cross-sport match resource (CRUD, featured flag, bulk import).
+  - name: Polls
+    description: Public reader polls + admin authoring.
+  - name: Cricket Display
+    description: Public read surfaces for cricket pages.
+  - name: Golf Display
+    description: Public read surfaces for golf pages.
+  - name: Match Display (shared)
+    description: Cross-sport public read surfaces (schedule, featured carousel).
+  - name: Cricket Legacy
+    description: Deprecated `/api/cric-scores` routes. Do not build new code against these.
+
+paths:
+  # ============================ AUTH ============================
+  /auth/signin1988:
+    post:
+      tags: [Auth]
+      operationId: authSignin
+      summary: Exchange username + password for a JWT
+      description: >-
+        The obfuscated suffix `1988` is part of the canonical path and MUST NOT be
+        normalised away; `/auth/signin` SHOULD return 404. The backend MUST return
+        the same 401 shape whether the username is unknown or the password is wrong,
+        to avoid leaking account existence.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SigninRequest" }
+      responses:
+        "200":
+          description: Authenticated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SigninResponse" }
+        "400":
+          description: Missing credentials.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { error: "Missing credentials" }
+        "401":
+          description: Invalid credentials (identical shape regardless of cause).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { error: "Invalid credentials" }
+
+  /auth/signup351:
+    post:
+      tags: [Auth]
+      operationId: authSignup
+      summary: Create a new account
+      description: >-
+        The obfuscated suffix `351` is part of the canonical path. The client sends a
+        `passHash` (client-side hashed), but the backend MUST still apply its own
+        server-side hash (e.g. bcrypt/argon2) before storing and MUST NOT store the
+        value verbatim.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SignupRequest" }
+      responses:
+        "200":
+          description: Account created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SignupResponse" }
+        "400":
+          description: Missing fields.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { error: "Missing fields" }
+        "409":
+          description: Username already taken.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { error: "Username already taken" }
+
+  # ============================ MEDIA ============================
+  /media/presign:
+    post:
+      tags: [Media]
+      operationId: mediaPresign
+      summary: Presign an S3 PUT for a direct browser upload
+      description: >-
+        Admin-only. Returns a short-lived presigned S3 `PUT` plus the canonical
+        public URL to persist. The signature pins content-type and a max byte size,
+        so S3 itself rejects oversize / content-type-swapped uploads.
+      security:
+        - accessToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PresignRequest" }
+      responses:
+        "200":
+          description: Presigned upload details.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PresignResponse" }
+        "400":
+          description: Invalid contentType / folder / filename.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                contentType: { value: { error: "Invalid contentType" } }
+                folder: { value: { error: "Invalid folder" } }
+                filename: { value: { error: "Invalid filename" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /media:
+    delete:
+      tags: [Media]
+      operationId: mediaDelete
+      summary: Delete an uploaded object by key
+      description: >-
+        Admin-only. The backend MUST reject any `key` outside the `scoreboard/`
+        prefix with 400, preventing deletion of arbitrary bucket objects.
+      security:
+        - accessToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MediaDeleteRequest" }
+      responses:
+        "204": { description: Deleted. }
+        "400":
+          description: Key outside the `scoreboard/` prefix.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { error: "Key outside scoreboard/ prefix" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /articles/upload:
+    post:
+      tags: [Media]
+      operationId: articlesUpload
+      summary: Presign alias (folder hard-coded to `articles`)
+      description: Same shape as `/media/presign`; any client `folder` is ignored.
+      security: [{ accessToken: [] }]
+      requestBody: { $ref: "#/components/requestBodies/PresignAlias" }
+      responses:
+        "200": { $ref: "#/components/responses/Presign" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /clubs/upload:
+    post:
+      tags: [Media]
+      operationId: clubsUpload
+      summary: Presign alias (folder hard-coded to `clubs`)
+      security: [{ accessToken: [] }]
+      requestBody: { $ref: "#/components/requestBodies/PresignAlias" }
+      responses:
+        "200": { $ref: "#/components/responses/Presign" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /photos/upload:
+    post:
+      tags: [Media]
+      operationId: photosUpload
+      summary: Presign alias (folder hard-coded to `photos`)
+      security: [{ accessToken: [] }]
+      requestBody: { $ref: "#/components/requestBodies/PresignAlias" }
+      responses:
+        "200": { $ref: "#/components/responses/Presign" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /players/upload:
+    post:
+      tags: [Media]
+      operationId: playersUpload
+      summary: Presign alias (folder hard-coded to `players`)
+      security: [{ accessToken: [] }]
+      requestBody: { $ref: "#/components/requestBodies/PresignAlias" }
+      responses:
+        "200": { $ref: "#/components/responses/Presign" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /sponsors/upload:
+    post:
+      tags: [Media]
+      operationId: sponsorsUpload
+      summary: Presign alias (folder hard-coded to `sponsors`)
+      security: [{ accessToken: [] }]
+      requestBody: { $ref: "#/components/requestBodies/PresignAlias" }
+      responses:
+        "200": { $ref: "#/components/responses/Presign" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /teams/upload:
+    post:
+      tags: [Media]
+      operationId: teamsUpload
+      summary: Presign alias (folder hard-coded to `teams`)
+      security: [{ accessToken: [] }]
+      requestBody: { $ref: "#/components/requestBodies/PresignAlias" }
+      responses:
+        "200": { $ref: "#/components/responses/Presign" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /tournaments/upload:
+    post:
+      tags: [Media]
+      operationId: tournamentsUpload
+      summary: Presign alias (folder hard-coded to `tournaments`)
+      security: [{ accessToken: [] }]
+      requestBody: { $ref: "#/components/requestBodies/PresignAlias" }
+      responses:
+        "200": { $ref: "#/components/responses/Presign" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /venues/upload:
+    post:
+      tags: [Media]
+      operationId: venuesUpload
+      summary: Presign alias (folder hard-coded to `venues`)
+      security: [{ accessToken: [] }]
+      requestBody: { $ref: "#/components/requestBodies/PresignAlias" }
+      responses:
+        "200": { $ref: "#/components/responses/Presign" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /videos/upload:
+    post:
+      tags: [Media]
+      operationId: videosUpload
+      summary: Presign alias (folder hard-coded to `videos`)
+      description: >-
+        The `videos` folder accepts both `image/*` and `video/*` content types,
+        with a higher size cap than image-only folders.
+      security: [{ accessToken: [] }]
+      requestBody: { $ref: "#/components/requestBodies/PresignAlias" }
+      responses:
+        "200": { $ref: "#/components/responses/Presign" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ============================ ARTICLES ============================
+  /articles:
+    get:
+      tags: [Articles]
+      operationId: articlesList
+      summary: List all articles
+      responses:
+        "200":
+          description: All articles.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Article" }
+    post:
+      tags: [Articles]
+      operationId: articleCreate
+      summary: Create an article
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ArticleInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Article" }
+
+  /articles/popular:
+    get:
+      tags: [Articles]
+      operationId: articlesPopular
+      summary: Popular article feed
+      description: >-
+        Currently implemented as the most-recently-created PUBLISHED articles,
+        newest first (`createdAt DESC`). DRAFT and ARCHIVED are excluded. The
+        ranking will change when real popularity signals exist; the shape will not.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: 1..128. Values > 128 are clamped to 128; < 1 or non-integer → 400.
+          schema: { type: integer, default: 10, minimum: 1, maximum: 128 }
+      responses:
+        "200":
+          description: Up to `limit` published articles, newest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Article" }
+        "400":
+          description: Invalid limit.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { error: "Invalid limit" }
+
+  /articles/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Articles]
+      operationId: articleGet
+      summary: Fetch an article by slug (DRAFT/ARCHIVED reachable for admin preview)
+      responses:
+        "200":
+          description: The article.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Article" }
+        "404": { $ref: "#/components/responses/NotFoundArticle" }
+    put:
+      tags: [Articles]
+      operationId: articleReplace
+      summary: Full replacement of an article
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ArticleInput" }
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Article" }
+        "404": { $ref: "#/components/responses/NotFoundArticle" }
+    delete:
+      tags: [Articles]
+      operationId: articleDelete
+      summary: Delete an article
+      responses:
+        "204": { description: Deleted. }
+
+  # ============================ CLUBS ============================
+  /clubs:
+    get:
+      tags: [Clubs]
+      operationId: clubsList
+      summary: List all clubs
+      responses:
+        "200":
+          description: All clubs.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Club" }
+    post:
+      tags: [Clubs]
+      operationId: clubCreate
+      summary: Create a club
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClubInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Club" }
+
+  /clubs/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Clubs]
+      operationId: clubGet
+      summary: Fetch a club by slug
+      responses:
+        "200":
+          description: The club.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Club" }
+        "404": { $ref: "#/components/responses/NotFoundClub" }
+    put:
+      tags: [Clubs]
+      operationId: clubReplace
+      summary: Full replacement of a club
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClubInput" }
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Club" }
+        "404": { $ref: "#/components/responses/NotFoundClub" }
+    delete:
+      tags: [Clubs]
+      operationId: clubDelete
+      summary: Delete a club
+      responses:
+        "204": { description: Deleted. }
+
+  # ============================ PLAYERS ============================
+  /players:
+    get:
+      tags: [Players]
+      operationId: playersList
+      summary: List players (optional name search)
+      parameters:
+        - $ref: "#/components/parameters/Search"
+      responses:
+        "200":
+          description: Players (filtered by `search` when provided).
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Player" }
+    post:
+      tags: [Players]
+      operationId: playerCreate
+      summary: Create a player
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlayerInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Player" }
+
+  /players/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Players]
+      operationId: playerGet
+      summary: Fetch a player by slug
+      responses:
+        "200":
+          description: The player.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Player" }
+        "404": { $ref: "#/components/responses/NotFoundPlayer" }
+    put:
+      tags: [Players]
+      operationId: playerReplace
+      summary: Full replacement of a player
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlayerInput" }
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Player" }
+        "404": { $ref: "#/components/responses/NotFoundPlayer" }
+    delete:
+      tags: [Players]
+      operationId: playerDelete
+      summary: Delete a player
+      responses:
+        "204": { description: Deleted. }
+
+  # ============================ TEAMS ============================
+  /teams:
+    get:
+      tags: [Teams]
+      operationId: teamsList
+      summary: List teams (optional name search)
+      parameters:
+        - $ref: "#/components/parameters/Search"
+      responses:
+        "200":
+          description: Teams (filtered by `search` when provided).
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Team" }
+    post:
+      tags: [Teams]
+      operationId: teamCreate
+      summary: Create a team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TeamInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Team" }
+
+  /teams/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Teams]
+      operationId: teamGet
+      summary: Fetch a team by slug
+      responses:
+        "200":
+          description: The team.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Team" }
+        "404": { $ref: "#/components/responses/NotFoundTeam" }
+    put:
+      tags: [Teams]
+      operationId: teamReplace
+      summary: Full replacement of a team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TeamInput" }
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Team" }
+        "404": { $ref: "#/components/responses/NotFoundTeam" }
+    delete:
+      tags: [Teams]
+      operationId: teamDelete
+      summary: Delete a team
+      responses:
+        "204": { description: Deleted. }
+
+  # ============================ TOURNAMENTS ============================
+  /tournaments:
+    get:
+      tags: [Tournaments]
+      operationId: tournamentsList
+      summary: List all tournaments
+      description: Every item MUST include `slug` and `name` (used in match/event dropdowns).
+      responses:
+        "200":
+          description: All tournaments.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Tournament" }
+    post:
+      tags: [Tournaments]
+      operationId: tournamentCreate
+      summary: Create a tournament
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TournamentInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tournament" }
+
+  /tournaments/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Tournaments]
+      operationId: tournamentGet
+      summary: Fetch a tournament by slug
+      responses:
+        "200":
+          description: The tournament.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tournament" }
+        "404": { $ref: "#/components/responses/NotFoundTournament" }
+    put:
+      tags: [Tournaments]
+      operationId: tournamentReplace
+      summary: Full replacement of a tournament
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TournamentInput" }
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tournament" }
+        "404": { $ref: "#/components/responses/NotFoundTournament" }
+    delete:
+      tags: [Tournaments]
+      operationId: tournamentDelete
+      summary: Delete a tournament
+      description: >-
+        Does NOT cascade. The backend SHOULD reject the delete while referencing
+        matches/events exist, or null out `tournamentSlug` on referencing rows.
+      responses:
+        "204": { description: Deleted. }
+
+  # ============================ VENUES ============================
+  /venues:
+    get:
+      tags: [Venues]
+      operationId: venuesList
+      summary: List all venues
+      responses:
+        "200":
+          description: All venues.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Venue" }
+    post:
+      tags: [Venues]
+      operationId: venueCreate
+      summary: Create a venue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VenueInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Venue" }
+
+  /venues/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Venues]
+      operationId: venueGet
+      summary: Fetch a venue by slug
+      responses:
+        "200":
+          description: The venue.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Venue" }
+        "404": { $ref: "#/components/responses/NotFoundVenue" }
+    put:
+      tags: [Venues]
+      operationId: venueReplace
+      summary: Full replacement of a venue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VenueInput" }
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Venue" }
+        "404": { $ref: "#/components/responses/NotFoundVenue" }
+    delete:
+      tags: [Venues]
+      operationId: venueDelete
+      summary: Delete a venue
+      responses:
+        "204": { description: Deleted. }
+
+  # ============================ PHOTOS ============================
+  /photos:
+    get:
+      tags: [Photos]
+      operationId: photosList
+      summary: List photos (DRAFT excluded from public lists)
+      responses:
+        "200":
+          description: Photos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Photo" }
+    post:
+      tags: [Photos]
+      operationId: photoCreate
+      summary: Create a photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PhotoInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Photo" }
+
+  /photos/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Photos]
+      operationId: photoGet
+      summary: Fetch a photo by slug
+      responses:
+        "200":
+          description: The photo.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Photo" }
+        "404": { $ref: "#/components/responses/NotFoundPhoto" }
+    put:
+      tags: [Photos]
+      operationId: photoReplace
+      summary: Full replacement of a photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PhotoInput" }
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Photo" }
+        "404": { $ref: "#/components/responses/NotFoundPhoto" }
+    delete:
+      tags: [Photos]
+      operationId: photoDelete
+      summary: Delete a photo
+      responses:
+        "204": { description: Deleted. }
+
+  # ============================ VIDEOS ============================
+  /videos:
+    get:
+      tags: [Videos]
+      operationId: videosList
+      summary: List videos (HIDDEN excluded from public lists)
+      responses:
+        "200":
+          description: Videos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Video" }
+    post:
+      tags: [Videos]
+      operationId: videoCreate
+      summary: Create a video
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VideoInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Video" }
+
+  /videos/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Videos]
+      operationId: videoGet
+      summary: Fetch a video by slug
+      responses:
+        "200":
+          description: The video.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Video" }
+        "404": { $ref: "#/components/responses/NotFoundVideo" }
+    put:
+      tags: [Videos]
+      operationId: videoReplace
+      summary: Full replacement of a video
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VideoInput" }
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Video" }
+        "404": { $ref: "#/components/responses/NotFoundVideo" }
+    delete:
+      tags: [Videos]
+      operationId: videoDelete
+      summary: Delete a video
+      responses:
+        "204": { description: Deleted. }
+
+  # ============================ SPONSORS ============================
+  /sponsors:
+    get:
+      tags: [Sponsors]
+      operationId: sponsorsList
+      summary: List all sponsors
+      responses:
+        "200":
+          description: All sponsors.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Sponsor" }
+    post:
+      tags: [Sponsors]
+      operationId: sponsorCreate
+      summary: Create a sponsor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SponsorInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Sponsor" }
+
+  /sponsors/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Opaque sponsor id (numeric or string). Sponsors are NOT slug-addressed.
+        schema: { $ref: "#/components/schemas/SponsorId" }
+    delete:
+      tags: [Sponsors]
+      operationId: sponsorDelete
+      summary: Delete a sponsor by id
+      description: There is intentionally no GET-by-id and no PUT; edits = delete + recreate.
+      responses:
+        "204": { description: Deleted. }
+        "404":
+          description: Sponsor not found.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { error: "Sponsor not found" }
+
+  # ============================ OTHER EVENTS ============================
+  /other-events:
+    get:
+      tags: [Other Events]
+      operationId: otherEventsList
+      summary: List all other events
+      responses:
+        "200":
+          description: All other events.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/OtherEvent" }
+    post:
+      tags: [Other Events]
+      operationId: otherEventCreate
+      summary: Create an other event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OtherEventInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OtherEvent" }
+
+  /other-events/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Other Events]
+      operationId: otherEventGet
+      summary: Fetch an other event by slug
+      responses:
+        "200":
+          description: The other event.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OtherEvent" }
+        "404": { $ref: "#/components/responses/NotFoundOtherEvent" }
+    put:
+      tags: [Other Events]
+      operationId: otherEventReplace
+      summary: Full replacement of an other event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OtherEventInput" }
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OtherEvent" }
+        "404": { $ref: "#/components/responses/NotFoundOtherEvent" }
+    delete:
+      tags: [Other Events]
+      operationId: otherEventDelete
+      summary: Delete an other event
+      responses:
+        "204": { description: Deleted. }
+
+  # ============================ MATCHES ============================
+  /matches:
+    get:
+      tags: [Matches]
+      operationId: matchesList
+      summary: List all matches
+      description: "Each match includes `featured: boolean`; at most one is `true`."
+      responses:
+        "200":
+          description: All matches.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Match" }
+    post:
+      tags: [Matches]
+      operationId: matchCreate
+      summary: Create a match
+      description: >-
+        `featured` is read-only here (ignored; defaults to false). If `tournamentSlug`
+        is set and `details.cricketFormat` is missing/null, the tournament's
+        `cricketFormat` is inherited and persisted onto the match.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MatchInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Match" }
+
+  /matches/featured:
+    get:
+      tags: [Matches]
+      operationId: matchFeaturedGet
+      summary: Get the currently featured match
+      responses:
+        "200":
+          description: The featured match, or null when none is featured.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - { $ref: "#/components/schemas/Match" }
+                  - { type: "null" }
+
+  /matches/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Matches]
+      operationId: matchGet
+      summary: Fetch a match by slug (also used to hydrate the cricket/golf score editors)
+      responses:
+        "200":
+          description: The match.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Match" }
+        "404": { $ref: "#/components/responses/NotFoundMatch" }
+    put:
+      tags: [Matches]
+      operationId: matchReplace
+      summary: Full replacement of a match
+      description: >-
+        Full document replacement — NOT a deep merge. Unknown `details.*` keys
+        (e.g. another sport's scoring keys) MUST be preserved verbatim. `featured`
+        is ignored here. Cricket-format inheritance from the linked tournament
+        applies as on create.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MatchInput" }
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Match" }
+        "404": { $ref: "#/components/responses/NotFoundMatch" }
+    delete:
+      tags: [Matches]
+      operationId: matchDelete
+      summary: Delete a match
+      responses:
+        "204": { description: Deleted. }
+
+  /matches/{slug}/featured:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    put:
+      tags: [Matches]
+      operationId: matchFeaturedSet
+      summary: Mark a match as featured
+      description: >-
+        The backend MUST atomically unset `featured` on any previously featured
+        match in the same transaction (at-most-one invariant).
+      responses:
+        "200":
+          description: "The now-featured match (`featured: true`)."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Match" }
+        "404": { $ref: "#/components/responses/NotFoundMatch" }
+    delete:
+      tags: [Matches]
+      operationId: matchFeaturedClear
+      summary: Clear the featured flag (no-op if not featured)
+      responses:
+        "204": { description: Cleared. }
+
+  /matches/upload-schedule:
+    post:
+      tags: [Matches]
+      operationId: matchUploadSchedule
+      summary: Bulk-import matches from CSV / Excel
+      description: >-
+        Protected. Each row becomes one Match. Rows that fail validation are
+        reported in `errors[]` but do not abort the import unless every row fails
+        (then 422). Column order: homeTeamName, awayTeamName, sport, matchType?,
+        scheduledAt?, venue?, status?, notes?.
+      security: [{ accessToken: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/ScheduleUploadRequest" }
+      responses:
+        "200":
+          description: Import summary.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScheduleUploadResult" }
+        "400":
+          description: No file uploaded.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { error: "No file uploaded" }
+        "422":
+          description: All rows failed validation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScheduleUploadFailure" }
+
+  # ============================ POLLS ============================
+  /polls:
+    get:
+      tags: [Polls]
+      operationId: pollsList
+      summary: List polls for the public page
+      description: >-
+        Safe to call without credentials. When a `voterId` cookie or JWT is present,
+        `hasVoted` / `votedOptionId` are populated per poll. Send `withCredentials`
+        so the voter cookie round-trips.
+      parameters:
+        - name: filter
+          in: query
+          required: false
+          description: >-
+            `latest` (ACTIVE, createdAt DESC), `popular` (ACTIVE, totalVotes DESC then
+            createdAt DESC), `closed` (CLOSED + ACTIVE-past-endDate, endDate DESC then
+            createdAt DESC). Unknown values → 400.
+          schema:
+            type: string
+            enum: [popular, latest, closed]
+            default: latest
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: integer, default: 0, minimum: 0 }
+      responses:
+        "200":
+          description: Paged polls matching the filter.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PollListResponse" }
+        "400":
+          description: Unknown filter value.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { error: "Invalid filter" }
+    post:
+      tags: [Polls]
+      operationId: pollCreate
+      summary: Create a poll (admin)
+      description: >-
+        `options` is a flat array of plain strings; the backend assigns each a stable
+        `id`. Defaults `status` to DRAFT so the poll is hidden until activated.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PollInput" }
+      responses:
+        "201":
+          description: Created (full Poll shape; totalVotes 0; options have ids).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Poll" }
+
+  /polls/{id}:
+    parameters:
+      - $ref: "#/components/parameters/PollId"
+    get:
+      tags: [Polls]
+      operationId: pollGet
+      summary: Fetch a poll by id
+      description: Returns 404 for DRAFT polls or unknown ids.
+      responses:
+        "200":
+          description: The poll.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Poll" }
+        "404": { $ref: "#/components/responses/NotFoundPoll" }
+    put:
+      tags: [Polls]
+      operationId: pollReplace
+      summary: Replace a poll (admin)
+      description: >-
+        Options stay a flat string array. The backend preserves existing
+        `options[].id`/`votes` for matching (case-insensitive) strings, assigns a
+        fresh id (votes 0) to new strings, and drops options no longer present
+        (destroying their votes).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PollInput" }
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Poll" }
+        "404": { $ref: "#/components/responses/NotFoundPoll" }
+    delete:
+      tags: [Polls]
+      operationId: pollDelete
+      summary: Delete a poll (admin)
+      description: Also discards all of its votes and dedupe records.
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFoundPoll" }
+
+  /polls/{id}/vote:
+    parameters:
+      - $ref: "#/components/parameters/PollId"
+    post:
+      tags: [Polls]
+      operationId: pollVote
+      summary: Cast a vote on a poll
+      description: >-
+        Anonymous voting with best-effort dedupe (JWT > `voterId` cookie > IP+UA
+        hash). On the first vote without a cookie, the backend mints one and returns
+        it via `Set-Cookie: voterId=...; Max-Age=63072000; SameSite=Lax; HttpOnly;
+        Secure`. The increment + dedupe-record MUST be atomic. Changing your vote is
+        not supported in v1. A per-IP rate limit (~30/min) is recommended (429).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PollVoteRequest" }
+      responses:
+        "200":
+          description: Updated poll (hasVoted true, votedOptionId set).
+          headers:
+            Set-Cookie:
+              description: voterId cookie, set on the first vote from a given browser.
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Poll" }
+        "400":
+          description: Invalid optionId.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { error: "Invalid optionId" }
+        "404": { $ref: "#/components/responses/NotFoundPoll" }
+        "409":
+          description: Poll is closed, or the voter has already voted.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - { $ref: "#/components/schemas/Error" }
+                  - { $ref: "#/components/schemas/AlreadyVotedError" }
+              examples:
+                closed: { value: { error: "Poll is closed" } }
+                alreadyVoted:
+                  value: { error: "Already voted", votedOptionId: "opt-2" }
+        "429":
+          description: Too many vote attempts (rate limited).
+          headers:
+            Retry-After:
+              description: Seconds to wait before retrying.
+              schema: { type: integer }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  # ==================== MATCH DISPLAY (shared) ====================
+  /match/list-match:
+    get:
+      tags: [Match Display (shared)]
+      operationId: matchListMatch
+      summary: Schedule feed (past + upcoming) across sports
+      description: >-
+        Shared by cricket and golf schedule views. The client filters upcoming vs.
+        past by `startTime` and picks the next one for the countdown.
+      parameters:
+        - name: sport
+          in: query
+          required: false
+          description: e.g. CRICKET or GOLF. When omitted, returns all sports.
+          schema: { type: string }
+        - name: tournament
+          in: query
+          required: false
+          description: Tournament slug.
+          schema: { type: string }
+        - name: from
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/MatchStatus" }
+      responses:
+        "200":
+          description: Schedule items.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MatchScheduleItem" }
+
+  /match/past-featured:
+    get:
+      tags: [Match Display (shared)]
+      operationId: matchPastFeatured
+      summary: Recent featured match scorecards (carousel + ticker)
+      description: >-
+        Returns compact summaries. Items are either the cricket-shaped
+        `FeaturedMatchSummary` or the golf-shaped `FeaturedGolfSummary`, discriminated
+        by `sport` / `scoreboard.format`. Cacheable (`shareReplay(1)` on the client).
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 10 }
+        - name: sport
+          in: query
+          required: false
+          description: e.g. GOLF. When omitted, mixes sports.
+          schema: { type: string }
+      responses:
+        "200":
+          description: Featured summaries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - { $ref: "#/components/schemas/FeaturedMatchSummary" }
+                    - { $ref: "#/components/schemas/FeaturedGolfSummary" }
+
+  # ==================== CRICKET DISPLAY ====================
+  /match/cricket/summaries:
+    get:
+      tags: [Cricket Display]
+      operationId: cricketSummaries
+      summary: Cricket summary cards (mixed past/live/upcoming)
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 10, maximum: 20 }
+        - name: tournament
+          in: query
+          required: false
+          description: Tournament slug; when omitted, mixes tournaments.
+          schema: { type: string }
+        - name: include
+          in: query
+          required: false
+          description: Comma-separated subset of PAST,LIVE,UPCOMING.
+          schema: { type: string, default: "PAST,LIVE,UPCOMING" }
+      responses:
+        "200":
+          description: Cricket summary cards (newest/next-up first).
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MatchSummary" }
+
+  /match/cricket/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Cricket Display]
+      operationId: cricketMatchDetail
+      summary: Full cricket match detail (scorecard, commentary, analysis, MVP)
+      responses:
+        "200":
+          description: Cricket match detail.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CricketMatchDetail" }
+        "404": { $ref: "#/components/responses/NotFoundMatch" }
+
+  /match/cricket/{slug}/live:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Cricket Display]
+      operationId: cricketLive
+      summary: Lightweight live cricket score (poll/SSE)
+      description: "Should set `Cache-Control: no-store`."
+      responses:
+        "200":
+          description: Live cricket score.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CricketLive" }
+
+  # ==================== GOLF DISPLAY ====================
+  /match/golf/summaries:
+    get:
+      tags: [Golf Display]
+      operationId: golfSummaries
+      summary: Golf summary cards (mixed past/live/upcoming)
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 10, maximum: 20 }
+        - name: tournament
+          in: query
+          required: false
+          schema: { type: string }
+        - name: include
+          in: query
+          required: false
+          description: Comma-separated subset of PAST,LIVE,UPCOMING.
+          schema: { type: string, default: "PAST,LIVE,UPCOMING" }
+      responses:
+        "200":
+          description: Golf summary cards (newest/next-up first).
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/GolfSummary" }
+
+  /match/golf/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Golf Display]
+      operationId: golfEventDetail
+      summary: Full golf event detail (leaderboard / scorecard / hole-by-hole)
+      responses:
+        "200":
+          description: Golf event detail.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GolfEventDetail" }
+        "404": { $ref: "#/components/responses/NotFoundEvent" }
+
+  /match/golf/{slug}/live:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      tags: [Golf Display]
+      operationId: golfLive
+      summary: Lightweight live golf payload (poll/SSE)
+      description: "Should set `Cache-Control: no-store`."
+      responses:
+        "200":
+          description: Live golf payload.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GolfLive" }
+
+  # ==================== CRICKET LEGACY (deprecated) ====================
+  /cric-scores:
+    get:
+      tags: [Cricket Legacy]
+      operationId: cricScoresList
+      deprecated: true
+      summary: "[Deprecated] List legacy cric-scores"
+      description: >-
+        Legacy route, `/api`-only (not mirrored at the host root). Superseded by the
+        cricket display endpoints and the generic `/matches` resource.
+      responses:
+        "200":
+          description: Legacy scores.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CricScore" }
+    post:
+      tags: [Cricket Legacy]
+      operationId: cricScoreCreate
+      deprecated: true
+      summary: "[Deprecated] Create a legacy cric-score"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CricScoreInput" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CricScore" }
+
+  /cric-scores/status/{status}:
+    get:
+      tags: [Cricket Legacy]
+      operationId: cricScoresByStatus
+      deprecated: true
+      summary: "[Deprecated] List legacy cric-scores by status"
+      parameters:
+        - name: status
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [upcoming, live, completed]
+      responses:
+        "200":
+          description: Legacy scores with the given status.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CricScore" }
+
+  /cric-scores/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Cricket Legacy]
+      operationId: cricScoreGet
+      deprecated: true
+      summary: "[Deprecated] Fetch a legacy cric-score by id"
+      responses:
+        "200":
+          description: Legacy score.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CricScore" }
+    put:
+      tags: [Cricket Legacy]
+      operationId: cricScoreReplace
+      deprecated: true
+      summary: "[Deprecated] Replace a legacy cric-score"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CricScoreInput" }
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CricScore" }
+    delete:
+      tags: [Cricket Legacy]
+      operationId: cricScoreDelete
+      deprecated: true
+      summary: "[Deprecated] Delete a legacy cric-score"
+      responses:
+        "200":
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Score deleted" }
+
+components:
+  securitySchemes:
+    accessToken:
+      type: apiKey
+      in: header
+      name: x-access-token
+      description: JWT issued by the auth endpoints. Sent verbatim (not as a Bearer token).
+
+  parameters:
+    Slug:
+      name: slug
+      in: path
+      required: true
+      description: Backend-generated URL-friendly identifier.
+      schema: { type: string }
+    PollId:
+      name: id
+      in: path
+      required: true
+      description: Stable poll id (uuid or slug).
+      schema: { type: string }
+    Search:
+      name: search
+      in: query
+      required: false
+      description: Case-insensitive substring filter on `name`.
+      schema: { type: string }
+
+  requestBodies:
+    PresignAlias:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/PresignAliasRequest" }
+
+  responses:
+    Presign:
+      description: Presigned upload details (folder fixed by the alias).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/PresignResponse" }
+    Unauthorized:
+      description: Missing or invalid `x-access-token`.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: "Unauthorized" }
+    NotFoundArticle:
+      description: Article not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: "Article not found" }
+    NotFoundClub:
+      description: Club not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: "Club not found" }
+    NotFoundPlayer:
+      description: Player not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: "Player not found" }
+    NotFoundTeam:
+      description: Team not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: "Team not found" }
+    NotFoundTournament:
+      description: Tournament not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: "Tournament not found" }
+    NotFoundVenue:
+      description: Venue not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: "Venue not found" }
+    NotFoundPhoto:
+      description: Photo not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: "Photo not found" }
+    NotFoundVideo:
+      description: Video not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: "Video not found" }
+    NotFoundOtherEvent:
+      description: Other event not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: "Other event not found" }
+    NotFoundMatch:
+      description: Match not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: "Match not found" }
+    NotFoundEvent:
+      description: Event not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: "Event not found" }
+    NotFoundPoll:
+      description: Poll not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: "Poll not found" }
+
+  schemas:
+    # -------- Shared --------
+    Error:
+      type: object
+      description: Project-wide error shape.
+      required: [error]
+      properties:
+        error: { type: string, description: "Human-readable message." }
+        code: { type: string, description: "Optional machine code." }
+
+    Timestamp:
+      type: string
+      format: date-time
+      description: ISO 8601 timestamp.
+
+    # -------- Sport enums (value sets differ per resource) --------
+    SportBasic:
+      type: string
+      description: Sports used by Article, Tournament, Video. No GOLF, no OTHER.
+      enum: [CRICKET, RUGBY, SOCCER, BADMINTON, BOWLING, MOTOR_SPORTS, BASKETBALL, NETBALL, VOLLEYBALL, CYCLING]
+    SportWithOther:
+      type: string
+      description: Sports used by Player, Team, Club (`primarySport`). Adds OTHER.
+      enum: [CRICKET, RUGBY, SOCCER, BADMINTON, BOWLING, MOTOR_SPORTS, BASKETBALL, NETBALL, VOLLEYBALL, CYCLING, OTHER]
+    MatchSport:
+      type: string
+      description: Sports used by Match. Adds GOLF (no OTHER).
+      enum: [CRICKET, RUGBY, SOCCER, BADMINTON, BOWLING, MOTOR_SPORTS, BASKETBALL, NETBALL, VOLLEYBALL, CYCLING, GOLF]
+    OtherEventSport:
+      type: [string, "null"]
+      description: Sports used by OtherEvent. Nullable; no GOLF, no OTHER.
+      enum: [CRICKET, RUGBY, SOCCER, BADMINTON, BOWLING, MOTOR_SPORTS, BASKETBALL, NETBALL, VOLLEYBALL, CYCLING, null]
+    CricketFormat:
+      type: [string, "null"]
+      description: >-
+        Game length. T20/OD/T10/HUNDRED are single-innings-per-side; TEST allows two.
+        For HUNDRED the `*Overs`/`overs` fields carry total balls (0..100).
+      enum: [T20, OD, T10, TEST, HUNDRED, null]
+    MatchStatus:
+      type: string
+      enum: [SCHEDULED, LIVE, COMPLETED, CANCELLED, POSTPONED]
+    MatchType:
+      type: [string, "null"]
+      enum: [LEAGUE, KNOCKOUT, FRIENDLY, INDEPENDENT, null]
+
+    # -------- Auth --------
+    SigninRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string }
+    SigninResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token: { type: string, description: "JWT to send as `x-access-token`." }
+        user:
+          type: object
+          required: [id, priv]
+          properties:
+            id: { type: string, description: "Stable user id." }
+            priv: { type: string, description: "'Privilege / role marker (e.g. \"admin\").'" }
+    SignupRequest:
+      type: object
+      required: [username, passHash]
+      properties:
+        username: { type: string }
+        passHash:
+          type: string
+          description: Client-side hashed password. The backend MUST re-hash before storing.
+    SignupResponse:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, description: "JWT for the newly created account." }
+
+    # -------- Media --------
+    MediaFolder:
+      type: string
+      enum: [articles, clubs, general, photos, players, sponsors, teams, tournaments, venues, videos]
+    PresignRequest:
+      type: object
+      required: [filename, contentType, folder]
+      properties:
+        filename:
+          type: string
+          description: Used only to derive the extension; never echoed into the key path.
+          example: sponsor-logo.png
+        contentType:
+          type: string
+          description: MIME type; whitelisted per folder.
+          example: image/png
+        folder: { $ref: "#/components/schemas/MediaFolder" }
+    PresignAliasRequest:
+      type: object
+      required: [filename, contentType]
+      description: >-
+        Alias body. `folder` is hard-coded by the endpoint; any client-supplied
+        `folder` is ignored.
+      properties:
+        filename: { type: string, example: manchester-fc.png }
+        contentType: { type: string, example: image/png }
+    PresignResponse:
+      type: object
+      required: [uploadUrl, method, headers, key, url, maxUploadBytes, expiresIn]
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+          description: Short-lived presigned S3 PUT URL (different host from `url`).
+        method:
+          type: string
+          enum: [PUT]
+          description: Always PUT.
+        headers:
+          type: object
+          description: Headers the client MUST send on the PUT.
+          additionalProperties: { type: string }
+          example: { "Content-Type": "image/png" }
+        key:
+          type: string
+          description: S3 object key under the `scoreboard/` prefix.
+          example: scoreboard/sponsors/images/2026/05/uuid.png
+        url:
+          type: string
+          format: uri
+          description: Canonical public / CDN URL to store on the resource.
+        maxUploadBytes:
+          type: integer
+          description: Hard size limit baked into the signature (default 50 MB).
+          example: 52428800
+        expiresIn:
+          type: integer
+          description: Seconds the `uploadUrl` is valid (default 300).
+          example: 300
+    MediaDeleteRequest:
+      type: object
+      required: [key]
+      properties:
+        key:
+          type: string
+          description: Must be inside the `scoreboard/` prefix.
+          example: scoreboard/sponsors/images/2026/05/uuid.png
+
+    # -------- Articles --------
+    ArticleCategory:
+      type: string
+      enum: [NEWS, MATCH_REPORT, FEATURE, INTERVIEW, OPINION]
+    ArticleStatus:
+      type: string
+      enum: [PUBLISHED, DRAFT, ARCHIVED]
+    ImageYAlignment:
+      type: [string, "null"]
+      description: Hero crop hint. `imageYOffset` is only set when this is `custom`.
+      enum: [top, center, bottom, custom, null]
+    Article:
+      type: object
+      required: [slug, title, author, content, category, sport, status, createdAt, updatedAt]
+      properties:
+        slug: { type: string }
+        title: { type: string }
+        author: { type: string }
+        content: { type: string, description: "HTML body." }
+        category: { $ref: "#/components/schemas/ArticleCategory" }
+        sport: { $ref: "#/components/schemas/SportBasic" }
+        status: { $ref: "#/components/schemas/ArticleStatus" }
+        summary: { type: [string, "null"] }
+        imageUrl: { type: [string, "null"], description: "Public URL from /articles/upload." }
+        imageYAlignment: { $ref: "#/components/schemas/ImageYAlignment" }
+        imageYOffset:
+          type: [number, "null"]
+          description: Pixel offset from top; non-null only when imageYAlignment is `custom`.
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
+    ArticleInput:
+      type: object
+      required: [title, author, content, category, sport, status]
+      properties:
+        title: { type: string }
+        author: { type: string }
+        content: { type: string, description: "HTML body." }
+        category: { $ref: "#/components/schemas/ArticleCategory" }
+        sport: { $ref: "#/components/schemas/SportBasic" }
+        status:
+          allOf: [{ $ref: "#/components/schemas/ArticleStatus" }]
+          default: DRAFT
+        summary: { type: [string, "null"] }
+        imageUrl: { type: [string, "null"] }
+        imageYAlignment:
+          allOf: [{ $ref: "#/components/schemas/ImageYAlignment" }]
+          default: center
+        imageYOffset:
+          type: [number, "null"]
+          description: Required when imageYAlignment is `custom`; MUST be null otherwise.
+
+    # -------- Clubs --------
+    ClubType:
+      type: string
+      enum: [GRASSROOTS, SEMI_PRO, PROFESSIONAL]
+    ClubStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE, SUSPENDED]
+    Club:
+      type: object
+      required: [slug, name, type, primarySport, status, primaryColor, secondaryColor, createdAt, updatedAt]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        type: { $ref: "#/components/schemas/ClubType" }
+        primarySport: { $ref: "#/components/schemas/SportWithOther" }
+        status: { $ref: "#/components/schemas/ClubStatus" }
+        description: { type: [string, "null"] }
+        city: { type: [string, "null"] }
+        country: { type: [string, "null"] }
+        foundedYear: { type: [number, "null"] }
+        website: { type: [string, "null"] }
+        email: { type: [string, "null"] }
+        logoUrl: { type: [string, "null"], description: "Public URL from /clubs/upload." }
+        primaryColor: { type: string, description: Hex color., default: "#1976d2" }
+        secondaryColor: { type: string, description: Hex color., default: "#ffffff" }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
+    ClubInput:
+      type: object
+      required: [name, type, primarySport, status]
+      properties:
+        name: { type: string }
+        type: { $ref: "#/components/schemas/ClubType" }
+        primarySport: { $ref: "#/components/schemas/SportWithOther" }
+        status:
+          allOf: [{ $ref: "#/components/schemas/ClubStatus" }]
+          default: ACTIVE
+        description: { type: [string, "null"] }
+        city: { type: [string, "null"] }
+        country: { type: [string, "null"] }
+        foundedYear: { type: [number, "null"] }
+        website: { type: [string, "null"] }
+        email: { type: [string, "null"] }
+        logoUrl: { type: [string, "null"] }
+        primaryColor: { type: string, default: "#1976d2" }
+        secondaryColor: { type: string, default: "#ffffff" }
+
+    # -------- Players --------
+    PlayerStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE]
+    Player:
+      type: object
+      required: [slug, name, sport, status, createdAt, updatedAt]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        sport: { $ref: "#/components/schemas/SportWithOther" }
+        status: { $ref: "#/components/schemas/PlayerStatus" }
+        bio: { type: [string, "null"] }
+        team: { type: [string, "null"], description: "Free-text team name, not a Team.slug FK." }
+        position: { type: [string, "null"] }
+        country: { type: [string, "null"] }
+        photoUrl: { type: [string, "null"], description: "Public URL from /players/upload." }
+        jerseyNumber:
+          type: [number, "null"]
+          description: Last value seen on a match's homeTeamPlayers / awayTeamPlayers entry.
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
+    PlayerInput:
+      type: object
+      required: [name, sport, status]
+      properties:
+        name: { type: string }
+        sport: { $ref: "#/components/schemas/SportWithOther" }
+        status:
+          allOf: [{ $ref: "#/components/schemas/PlayerStatus" }]
+          default: ACTIVE
+        bio: { type: [string, "null"] }
+        team: { type: [string, "null"] }
+        position: { type: [string, "null"] }
+        country: { type: [string, "null"] }
+        photoUrl: { type: [string, "null"] }
+        jerseyNumber: { type: [number, "null"] }
+
+    # -------- Teams --------
+    TeamStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE]
+    Team:
+      type: object
+      required: [slug, name, sport, status, createdAt, updatedAt]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        sport: { $ref: "#/components/schemas/SportWithOther" }
+        status: { $ref: "#/components/schemas/TeamStatus" }
+        description: { type: [string, "null"] }
+        country: { type: [string, "null"] }
+        city: { type: [string, "null"] }
+        logoUrl: { type: [string, "null"], description: "Public URL from /teams/upload." }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
+    TeamInput:
+      type: object
+      required: [name, sport, status]
+      properties:
+        name: { type: string }
+        sport: { $ref: "#/components/schemas/SportWithOther" }
+        status:
+          allOf: [{ $ref: "#/components/schemas/TeamStatus" }]
+          default: ACTIVE
+        description: { type: [string, "null"] }
+        country: { type: [string, "null"] }
+        city: { type: [string, "null"] }
+        logoUrl: { type: [string, "null"] }
+
+    # -------- Tournaments --------
+    TournamentFormat:
+      type: string
+      enum: [LEAGUE, KNOCKOUT, GROUP_STAGE, ROUND_ROBIN]
+    TournamentStatus:
+      type: string
+      enum: [UPCOMING, ONGOING, COMPLETED, CANCELLED]
+    Tournament:
+      type: object
+      required: [slug, name, sport, format, status, createdAt, updatedAt]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        sport: { $ref: "#/components/schemas/SportBasic" }
+        format: { $ref: "#/components/schemas/TournamentFormat" }
+        status: { $ref: "#/components/schemas/TournamentStatus" }
+        cricketFormat:
+          allOf: [{ $ref: "#/components/schemas/CricketFormat" }]
+          description: Only meaningful when sport = CRICKET; inherited by linked matches on write.
+        description: { type: [string, "null"] }
+        startDate: { type: [string, "null"], format: date-time }
+        endDate: { type: [string, "null"], format: date-time }
+        location: { type: [string, "null"] }
+        logoUrl: { type: [string, "null"], description: "Public URL from /tournaments/upload." }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
+    TournamentInput:
+      type: object
+      required: [name, sport, format, status]
+      properties:
+        name: { type: string }
+        sport: { $ref: "#/components/schemas/SportBasic" }
+        format: { $ref: "#/components/schemas/TournamentFormat" }
+        status:
+          allOf: [{ $ref: "#/components/schemas/TournamentStatus" }]
+          default: UPCOMING
+        cricketFormat:
+          allOf: [{ $ref: "#/components/schemas/CricketFormat" }]
+          description: Ignored unless sport = CRICKET.
+        description: { type: [string, "null"] }
+        startDate: { type: [string, "null"], format: date-time }
+        endDate: { type: [string, "null"], format: date-time }
+        location: { type: [string, "null"] }
+        logoUrl: { type: [string, "null"] }
+
+    # -------- Venues --------
+    VenueType:
+      type: string
+      enum: [STADIUM, ARENA, GROUND, INDOOR_COURT, OUTDOOR_COURT, CLUBHOUSE, OTHER]
+    VenueStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE, CLOSED]
+    Emirate:
+      type: [string, "null"]
+      description: UAE-specific; null for venues outside the UAE.
+      enum: [ABU_DHABI, DUBAI, SHARJAH, AJMAN, UMM_AL_QUWAIN, RAS_AL_KHAIMAH, FUJAIRAH, null]
+    Venue:
+      type: object
+      required: [slug, name, type, status, createdAt, updatedAt]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        type: { $ref: "#/components/schemas/VenueType" }
+        status: { $ref: "#/components/schemas/VenueStatus" }
+        description: { type: [string, "null"] }
+        capacity: { type: [number, "null"] }
+        address: { type: [string, "null"] }
+        emirate: { $ref: "#/components/schemas/Emirate" }
+        city: { type: [string, "null"] }
+        country: { type: [string, "null"] }
+        website: { type: [string, "null"] }
+        email: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
+        imageUrl: { type: [string, "null"], description: "Public URL from /venues/upload." }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
+    VenueInput:
+      type: object
+      required: [name, type, status]
+      properties:
+        name: { type: string }
+        type: { $ref: "#/components/schemas/VenueType" }
+        status:
+          allOf: [{ $ref: "#/components/schemas/VenueStatus" }]
+          default: ACTIVE
+        description: { type: [string, "null"] }
+        capacity: { type: [number, "null"] }
+        address: { type: [string, "null"] }
+        emirate: { $ref: "#/components/schemas/Emirate" }
+        city: { type: [string, "null"] }
+        country: { type: [string, "null"] }
+        website: { type: [string, "null"] }
+        email: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
+        imageUrl: { type: [string, "null"] }
+
+    # -------- Photos --------
+    PhotoStatus:
+      type: string
+      enum: [PUBLISHED, DRAFT]
+    Photo:
+      type: object
+      required: [slug, title, status, createdAt, updatedAt]
+      properties:
+        slug: { type: string }
+        title: { type: string }
+        status: { $ref: "#/components/schemas/PhotoStatus" }
+        description: { type: [string, "null"] }
+        imageUrl: { type: [string, "null"], description: "Public URL from /photos/upload." }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
+    PhotoInput:
+      type: object
+      required: [title, status]
+      properties:
+        title: { type: string }
+        status:
+          allOf: [{ $ref: "#/components/schemas/PhotoStatus" }]
+          default: DRAFT
+        description: { type: [string, "null"] }
+        imageUrl: { type: [string, "null"] }
+
+    # -------- Videos --------
+    VideoStatus:
+      type: string
+      enum: [ACTIVE, HIDDEN]
+    Video:
+      type: object
+      required: [slug, caption, sport, date, source, status, createdAt, updatedAt]
+      properties:
+        slug: { type: string }
+        caption: { type: string }
+        title: { type: [string, "null"] }
+        sport: { $ref: "#/components/schemas/SportBasic" }
+        date: { type: string, format: date-time }
+        source:
+          type: string
+          description: YouTube video id (e.g. "dQw4w9WgXcQ") OR a hosted media URL.
+        status: { $ref: "#/components/schemas/VideoStatus" }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
+    VideoInput:
+      type: object
+      required: [caption, sport, date, source, status]
+      properties:
+        caption: { type: string }
+        sport: { $ref: "#/components/schemas/SportBasic" }
+        date: { type: string, format: date-time }
+        source: { type: string, description: "YouTube video id or hosted media URL." }
+        status:
+          allOf: [{ $ref: "#/components/schemas/VideoStatus" }]
+          default: ACTIVE
+        title: { type: [string, "null"] }
+
+    # -------- Sponsors --------
+    SponsorId:
+      oneOf:
+        - { type: string }
+        - { type: number }
+      description: Opaque sponsor id (numeric or string).
+    Sponsor:
+      type: object
+      required: [id, name, createdAt, updatedAt]
+      properties:
+        id: { $ref: "#/components/schemas/SponsorId" }
+        name: { type: string }
+        logoUrl: { type: [string, "null"], description: "Public URL from /sponsors/upload." }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
+    SponsorInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        logoUrl: { type: [string, "null"] }
+
+    # -------- Other Events --------
+    OtherEventType:
+      type: string
+      enum: [TRAINING, EXHIBITION, CEREMONY, AWARD_CEREMONY, PRESS_CONFERENCE, CLINIC, OTHER]
+    OtherEvent:
+      type: object
+      required: [slug, title, eventType, status, createdAt, updatedAt]
+      properties:
+        slug: { type: string }
+        title: { type: string }
+        eventType: { $ref: "#/components/schemas/OtherEventType" }
+        status: { $ref: "#/components/schemas/MatchStatus" }
+        sport: { $ref: "#/components/schemas/OtherEventSport" }
+        tournamentSlug: { type: [string, "null"], description: "FK to Tournament.slug." }
+        venue: { type: [string, "null"], description: "Free-text venue name, not a FK." }
+        scheduledAt: { type: [string, "null"], format: date-time }
+        organizer: { type: [string, "null"] }
+        description: { type: [string, "null"] }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
+    OtherEventInput:
+      type: object
+      required: [title, eventType, status]
+      properties:
+        title: { type: string }
+        eventType: { $ref: "#/components/schemas/OtherEventType" }
+        status:
+          allOf: [{ $ref: "#/components/schemas/MatchStatus" }]
+          default: SCHEDULED
+        sport: { $ref: "#/components/schemas/OtherEventSport" }
+        tournamentSlug: { type: [string, "null"] }
+        venue: { type: [string, "null"] }
+        scheduledAt: { type: [string, "null"], format: date-time }
+        organizer: { type: [string, "null"] }
+        description: { type: [string, "null"] }
+
+    # -------- Matches --------
+    EmbeddedPlayer:
+      type: object
+      description: Match-scoped player entry. jerseyNumber/position are scoped to this match.
+      required: [name]
+      properties:
+        name: { type: string, description: "Free-text player name, not necessarily a Player.slug." }
+        jerseyNumber: { type: [number, "null"] }
+        position: { type: [string, "null"] }
+        playerId: { type: [string, "null"], description: "Optional FK to Player.slug." }
+    TennisSet:
+      type: object
+      properties:
+        homeGames: { type: number }
+        awayGames: { type: number }
+    SportDetails:
+      type: object
+      description: >-
+        Sport-specific scoring fields. Different sports use disjoint subsets; keys
+        from other sports MAY be present and MUST be preserved verbatim on write.
+        Therefore additional/unknown keys are allowed. Cricket overs use X.Y notation
+        (Y in 0..5; 4.6 is illegal, rolls to 5.0); for HUNDRED the `*Overs` fields
+        carry total balls.
+      additionalProperties: true
+      properties:
+        # ---- Cricket ----
+        cricketFormat: { $ref: "#/components/schemas/CricketFormat" }
+        homeInn1Runs: { type: [number, "null"] }
+        homeInn1Wickets: { type: [number, "null"], minimum: 0, maximum: 10 }
+        homeInn1Overs: { type: [number, "null"], description: "X.Y with Y in 0..5 (balls), or total balls for HUNDRED." }
+        homeInn2Runs: { type: [number, "null"] }
+        homeInn2Wickets: { type: [number, "null"], minimum: 0, maximum: 10 }
+        homeInn2Overs: { type: [number, "null"] }
+        awayInn1Runs: { type: [number, "null"] }
+        awayInn1Wickets: { type: [number, "null"], minimum: 0, maximum: 10 }
+        awayInn1Overs: { type: [number, "null"] }
+        awayInn2Runs: { type: [number, "null"] }
+        awayInn2Wickets: { type: [number, "null"], minimum: 0, maximum: 10 }
+        awayInn2Overs: { type: [number, "null"] }
+        # ---- Football (Soccer) ----
+        extraTime: { type: [boolean, "null"] }
+        homeGoalsET: { type: [number, "null"] }
+        awayGoalsET: { type: [number, "null"] }
+        penalties: { type: [boolean, "null"] }
+        homePenalties: { type: [number, "null"] }
+        awayPenalties: { type: [number, "null"] }
+        # ---- Rugby ----
+        homeTries: { type: [number, "null"] }
+        homeConversions: { type: [number, "null"] }
+        homeDropGoals: { type: [number, "null"] }
+        homeRugbyPenalties: { type: [number, "null"] }
+        awayTries: { type: [number, "null"] }
+        awayConversions: { type: [number, "null"] }
+        awayDropGoals: { type: [number, "null"] }
+        awayRugbyPenalties: { type: [number, "null"] }
+        # ---- Basketball (per quarter + optional OT) ----
+        homeQ1: { type: [number, "null"] }
+        homeQ2: { type: [number, "null"] }
+        homeQ3: { type: [number, "null"] }
+        homeQ4: { type: [number, "null"] }
+        homeOT: { type: [number, "null"] }
+        awayQ1: { type: [number, "null"] }
+        awayQ2: { type: [number, "null"] }
+        awayQ3: { type: [number, "null"] }
+        awayQ4: { type: [number, "null"] }
+        awayOT: { type: [number, "null"] }
+        # ---- Tennis (max 5 sets) ----
+        sets:
+          type: array
+          maxItems: 5
+          items: { $ref: "#/components/schemas/TennisSet" }
+        # ---- Golf ----
+        format:
+          allOf: [{ $ref: "#/components/schemas/GolfFormat" }]
+          description: Discriminates the golf block.
+        coursePar: { type: [number, "null"] }
+        courseYards: { type: [number, "null"] }
+        rounds: { type: [number, "null"] }
+        currentRound: { type: [number, "null"] }
+        cutLine: { type: [number, "null"] }
+        winner: { type: [string, "null"], description: "Player or team name; empty when no winner yet." }
+        leaderboard:
+          type: array
+          description: STROKE_PLAY (and team-aggregate).
+          items: { $ref: "#/components/schemas/GolfStoredLeaderboardEntry" }
+        matchPlay:
+          oneOf:
+            - { $ref: "#/components/schemas/GolfStoredMatchPlay" }
+            - { type: "null" }
+        teamCompetition:
+          oneOf:
+            - { $ref: "#/components/schemas/GolfStoredTeamCompetition" }
+            - { type: "null" }
+    Match:
+      type: object
+      required: [slug, sport, homeTeamName, awayTeamName, status, featured, createdAt, updatedAt]
+      properties:
+        slug: { type: string }
+        sport: { $ref: "#/components/schemas/MatchSport" }
+        homeTeamName: { type: string, description: "Free-text team name, not a Team.slug FK." }
+        awayTeamName: { type: string }
+        status: { $ref: "#/components/schemas/MatchStatus" }
+        tournamentSlug: { type: [string, "null"], description: "FK to Tournament.slug; null for independent/friendly." }
+        matchType: { $ref: "#/components/schemas/MatchType" }
+        venue: { type: [string, "null"] }
+        scheduledAt: { type: [string, "null"], format: date-time }
+        referee: { type: [string, "null"] }
+        notes: { type: [string, "null"], description: "Free-text result / commentary line." }
+        homeScore: { type: [number, "null"], description: "Match-total override; admin-managed, not derived." }
+        awayScore: { type: [number, "null"] }
+        featured: { type: boolean, description: "Read-only via CRUD; set via /matches/:slug/featured. At most one true globally." }
+        details: { $ref: "#/components/schemas/SportDetails" }
+        homeTeamPlayers:
+          type: array
+          items: { $ref: "#/components/schemas/EmbeddedPlayer" }
+        awayTeamPlayers:
+          type: array
+          items: { $ref: "#/components/schemas/EmbeddedPlayer" }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        updatedAt: { $ref: "#/components/schemas/Timestamp" }
+    MatchInput:
+      type: object
+      required: [sport, homeTeamName, awayTeamName, status]
+      properties:
+        sport: { $ref: "#/components/schemas/MatchSport" }
+        homeTeamName: { type: string }
+        awayTeamName: { type: string }
+        status:
+          allOf: [{ $ref: "#/components/schemas/MatchStatus" }]
+          default: SCHEDULED
+        tournamentSlug: { type: [string, "null"] }
+        matchType: { $ref: "#/components/schemas/MatchType" }
+        venue: { type: [string, "null"] }
+        scheduledAt: { type: [string, "null"], format: date-time }
+        referee: { type: [string, "null"] }
+        notes: { type: [string, "null"] }
+        homeScore: { type: [number, "null"] }
+        awayScore: { type: [number, "null"] }
+        featured:
+          type: boolean
+          description: IGNORED on POST/PUT (set via /matches/:slug/featured); defaults to false.
+        details: { $ref: "#/components/schemas/SportDetails" }
+        homeTeamPlayers:
+          type: array
+          items: { $ref: "#/components/schemas/EmbeddedPlayer" }
+        awayTeamPlayers:
+          type: array
+          items: { $ref: "#/components/schemas/EmbeddedPlayer" }
+    ScheduleUploadRequest:
+      type: object
+      required: [file]
+      properties:
+        tournamentSlug:
+          type: string
+          description: Optional. Associates all imported matches with this tournament.
+        file:
+          type: string
+          format: binary
+          description: CSV or Excel file (.csv, .xls, .xlsx).
+    ScheduleUploadResult:
+      type: object
+      required: [imported, skipped, errors]
+      properties:
+        imported: { type: integer, example: 12 }
+        skipped: { type: integer, example: 1 }
+        errors:
+          type: array
+          items: { $ref: "#/components/schemas/ScheduleRowError" }
+    ScheduleRowError:
+      type: object
+      properties:
+        row: { type: integer, example: 3 }
+        reason: { type: string, example: "Missing homeTeamName" }
+    ScheduleUploadFailure:
+      type: object
+      required: [error, errors]
+      properties:
+        error: { type: string, example: "All rows failed validation" }
+        errors:
+          type: array
+          items: { $ref: "#/components/schemas/ScheduleRowError" }
+
+    # -------- Polls --------
+    PollPublicStatus:
+      type: string
+      description: DRAFT is never returned on public endpoints.
+      enum: [ACTIVE, CLOSED]
+    PollAdminStatus:
+      type: string
+      enum: [DRAFT, ACTIVE, CLOSED]
+    PollOption:
+      type: object
+      required: [id, text, votes]
+      properties:
+        id: { type: string, description: "Stable per option (uuid). Index is NOT stable." }
+        text: { type: string }
+        votes: { type: integer, description: "Tally; always present, 0 if none." }
+    Poll:
+      type: object
+      required: [id, question, options, status, totalVotes, createdAt, hasVoted, votedOptionId]
+      properties:
+        id: { type: string, description: "Stable id (uuid or slug)." }
+        question: { type: string }
+        options:
+          type: array
+          items: { $ref: "#/components/schemas/PollOption" }
+        status: { $ref: "#/components/schemas/PollPublicStatus" }
+        startDate: { type: [string, "null"], format: date-time }
+        endDate: { type: [string, "null"], format: date-time }
+        totalVotes: { type: integer, description: "Sum of options[].votes." }
+        createdAt: { $ref: "#/components/schemas/Timestamp" }
+        hasVoted:
+          type: boolean
+          description: True if the current voter (cookie/JWT) already voted. False for anonymous with no cookie.
+        votedOptionId:
+          type: [string, "null"]
+          description: The chosen options[].id when hasVoted is true; else null.
+    PollInput:
+      type: object
+      required: [question, options, status]
+      properties:
+        question: { type: string }
+        options:
+          type: array
+          minItems: 2
+          description: Plain text strings; the backend assigns each a stable id.
+          items: { type: string }
+        status:
+          allOf: [{ $ref: "#/components/schemas/PollAdminStatus" }]
+          default: DRAFT
+        startDate: { type: [string, "null"], format: date-time }
+        endDate: { type: [string, "null"], format: date-time }
+    PollListResponse:
+      type: object
+      required: [filter, limit, offset, total, items]
+      properties:
+        filter: { type: string, example: latest }
+        limit: { type: integer, example: 20 }
+        offset: { type: integer, example: 0 }
+        total: { type: integer, description: "Total matching the filter, ignoring limit/offset." }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Poll" }
+    PollVoteRequest:
+      type: object
+      required: [optionId]
+      properties:
+        optionId: { type: string, description: "Must match one of the poll's options[].id." }
+    AlreadyVotedError:
+      type: object
+      required: [error, votedOptionId]
+      properties:
+        error: { type: string, example: "Already voted" }
+        votedOptionId: { type: string }
+
+    # ==================== CRICKET DISPLAY ====================
+    MatchScheduleItem:
+      type: object
+      description: Schedule row. startTime MUST include a timezone offset.
+      required: [slug, homeTeam, awayTeam, startTime, status]
+      properties:
+        slug: { type: string }
+        embedSlug: { type: string, description: "Optional carousel alias resolving to the same match." }
+        tournament: { type: string }
+        stage: { type: [string, "null"], description: "e.g. Group | Quarter Final | Semi Final | Final." }
+        match: { type: string, description: "Optional bracket label." }
+        matchNumber: { type: integer, description: "Optional sequence number." }
+        homeTeam: { type: string }
+        awayTeam: { type: string }
+        startTime: { type: string, format: date-time, description: "ISO8601 with timezone." }
+        group: { type: string, description: "Optional, group-stage only." }
+        venue: { type: string }
+        ground: { type: string, description: "Optional short label." }
+        status: { $ref: "#/components/schemas/MatchStatus" }
+        featured: { type: boolean }
+    FeaturedDerived:
+      type: object
+      properties:
+        resultKind:
+          type: string
+          enum: [WIN, DRAW, TIE, NO_RESULT]
+          description: Defaults to WIN when omitted and a winner is set.
+        wonBy: { type: string, description: "Human-readable margin; omit/empty when resultKind != WIN." }
+        label: { type: string, description: "Optional pre-formatted result line; takes precedence over winner+wonBy." }
+        comment: { type: string, description: "'e.g. \"All Out\", \"10 balls remaining\".'" }
+    ScoreboardBatter:
+      type: object
+      properties:
+        order: { type: integer, description: "Batting order; -256 means unknown (prefer omitting)." }
+        name: { type: string }
+        runs: { type: integer }
+        out:
+          type: object
+          properties:
+            out: { type: boolean, description: "true = dismissed, false = not out." }
+    CricketScoreboardTeam:
+      type: object
+      properties:
+        batFirst: { type: boolean }
+        final: { type: integer, description: "Runs (1st innings)." }
+        finalWick: { type: integer, description: "Wickets (1st innings, 0..10)." }
+        finalOver: { type: integer, description: "Completed overs (1st innings)." }
+        finalOverBall: { type: integer, description: "Balls in the current over (0-5)." }
+        inn1Declared: { type: boolean, description: "Optional, TEST only." }
+        inn2Final: { type: [number, "null"], description: "Optional, TEST only." }
+        inn2Wick: { type: [number, "null"] }
+        inn2Over: { type: [number, "null"] }
+        inn2OverBall: { type: [number, "null"] }
+        inn2Declared: { type: boolean }
+        batting:
+          type: array
+          description: May be truncated server-side (carousel shows top two scorers).
+          items: { $ref: "#/components/schemas/ScoreboardBatter" }
+    CricketScoreboard:
+      type: object
+      properties:
+        winner: { type: string, description: "Team name; empty when resultKind != WIN." }
+        homeTeam: { $ref: "#/components/schemas/CricketScoreboardTeam" }
+        awayTeam: { $ref: "#/components/schemas/CricketScoreboardTeam" }
+    FeaturedMatchSummary:
+      type: object
+      description: Cricket variant of the past-featured summary.
+      required: [slug, sport]
+      properties:
+        embedSlug: { type: string }
+        slug: { type: string, description: "Canonical slug for match detail." }
+        sport: { type: string, description: "'Sport code (e.g. \"CRICKET\"). Case-insensitive on the client.'" }
+        cricketFormat:
+          allOf: [{ $ref: "#/components/schemas/CricketFormat" }]
+          description: Optional; drives score formatting.
+        tournament: { type: string }
+        homeTeam: { type: string }
+        awayTeam: { type: string }
+        startTime: { type: string, format: date-time }
+        group: { type: string }
+        venue: { type: string }
+        derived: { $ref: "#/components/schemas/FeaturedDerived" }
+        scoreboard: { $ref: "#/components/schemas/CricketScoreboard" }
+    SummaryInnings:
+      type: object
+      properties:
+        runs: { type: integer }
+        wickets: { type: integer }
+        overs: { type: string, description: "'X.Y notation (e.g. \"20.0\"). Alternative to `balls`.'" }
+        balls: { type: integer, description: "For HUNDRED format; alternative to `overs`." }
+        declared: { type: boolean, description: "Optional, multi-day only; appends a `d` suffix." }
+    CricketSummaryTeam:
+      type: object
+      properties:
+        name: { type: string }
+        shortName: { type: string, description: "Optional 2-4 letter code." }
+        logoUrl: { type: string, description: "Empty string allowed; client falls back by name." }
+        innings:
+          type: array
+          description: 0 (upcoming) / 1 (limited overs) / 1-2 (multi-day) entries.
+          items: { $ref: "#/components/schemas/SummaryInnings" }
+    CricketSummaryResult:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [WIN, DRAW, TIE, NO_RESULT]
+        label: { type: string, description: "Already cased for display." }
+    MatchSummary:
+      type: object
+      description: Cricket summary card.
+      required: [slug, sport, status, homeTeam, awayTeam]
+      properties:
+        slug: { type: string }
+        embedSlug: { type: string }
+        sport: { type: string }
+        tournament: { type: string }
+        tournamentLabel: { type: string, description: "Short code top-right; falls back to tournament." }
+        status:
+          type: string
+          enum: [UPCOMING, LIVE, RESULT]
+          description: Must agree with presence of `result`.
+        startTime: { type: string, format: date-time }
+        venue: { type: string }
+        venueLabel: { type: string, description: "Optional pre-uppercased display string." }
+        cricketFormat: { $ref: "#/components/schemas/CricketFormat" }
+        homeTeam: { $ref: "#/components/schemas/CricketSummaryTeam" }
+        awayTeam: { $ref: "#/components/schemas/CricketSummaryTeam" }
+        result:
+          oneOf:
+            - { $ref: "#/components/schemas/CricketSummaryResult" }
+            - { type: "null" }
+          description: Omit/null unless status is RESULT.
+    CricketTeamScore:
+      type: object
+      properties:
+        name: { type: string }
+        score: { type: string, description: "'e.g. \"138/5\".'" }
+        overs: { type: string, description: "'e.g. \"12.0 Ov\".'" }
+    CricketBatter:
+      type: object
+      properties:
+        name: { type: string }
+        team: { type: string }
+        runs: { type: integer }
+        balls: { type: integer }
+        fours: { type: integer }
+        sixes: { type: integer }
+        strikeRate: { type: number }
+    CricketBowler:
+      type: object
+      properties:
+        name: { type: string }
+        team: { type: string }
+        overs: { type: number }
+        maidens: { type: integer }
+        runs: { type: integer }
+        wickets: { type: integer }
+        economy: { type: number }
+    ScorecardBatter:
+      type: object
+      properties:
+        name: { type: string }
+        captain: { type: boolean, default: false }
+        keeper: { type: boolean, default: false }
+        dismissal: { type: string, description: "'e.g. \"run out (Safni)\" or \"not out\".'" }
+        runs: { type: integer }
+        balls: { type: integer }
+        fours: { type: integer }
+        sixes: { type: integer }
+        strikeRate: { type: number }
+        minutes: { type: integer }
+    FallOfWicket:
+      type: object
+      properties:
+        score: { type: integer }
+        wicket: { type: integer }
+        batter: { type: string }
+        over: { type: string, description: "'e.g. \"4.2\".'" }
+    ScorecardBowler:
+      type: object
+      properties:
+        name: { type: string }
+        captain: { type: boolean }
+        overs: { type: number }
+        maidens: { type: integer }
+        runs: { type: integer }
+        wickets: { type: integer }
+        dots: { type: integer }
+        fours: { type: integer }
+        sixes: { type: integer }
+        wides: { type: integer }
+        noBalls: { type: integer }
+        economy: { type: number }
+    ScorecardInnings:
+      type: object
+      properties:
+        teamName: { type: string }
+        score: { type: string }
+        overs: { type: string }
+        batters:
+          type: array
+          items: { $ref: "#/components/schemas/ScorecardBatter" }
+        extras:
+          type: object
+          properties:
+            total: { type: integer }
+            breakdown: { type: string, description: "'e.g. \"wd 6, lb 2, nb 1, b 1\".'" }
+        yetToBat:
+          type: array
+          items: { type: string }
+        fallOfWickets:
+          type: array
+          items: { $ref: "#/components/schemas/FallOfWicket" }
+        bowlers:
+          type: array
+          items: { $ref: "#/components/schemas/ScorecardBowler" }
+    CommentaryEntry:
+      oneOf:
+        - { $ref: "#/components/schemas/CommentaryBall" }
+        - { $ref: "#/components/schemas/CommentaryNotification" }
+        - { $ref: "#/components/schemas/CommentaryOverEnd" }
+      discriminator:
+        propertyName: kind
+        mapping:
+          ball: "#/components/schemas/CommentaryBall"
+          notification: "#/components/schemas/CommentaryNotification"
+          over-end: "#/components/schemas/CommentaryOverEnd"
+    CommentaryBall:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [ball] }
+        over: { type: string, description: "overs.balls." }
+        badge:
+          type: string
+          enum: [dot, run, four, six, wide, noball, wicket]
+        badgeLabel:
+          type: string
+          description: '0 | 1 | 4 | 6 | WD | NB | W.'
+        description: { type: string }
+        isBoundary: { type: boolean }
+    CommentaryNotification:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [notification] }
+        text: { type: string }
+    CommentaryOverEnd:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [over-end] }
+        overNumber: { type: integer }
+        score: { type: string }
+        runs: { type: integer, description: "Runs in this over." }
+        wickets: { type: integer, description: "Wickets in this over." }
+        batters:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              notOut: { type: boolean }
+              runs: { type: integer }
+              balls: { type: integer }
+        bowlers:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              overs: { type: number }
+              maidens: { type: integer }
+              runs: { type: integer }
+              wickets: { type: integer }
+    CommentaryInnings:
+      type: object
+      properties:
+        teamName: { type: string }
+        entries:
+          type: array
+          description: Newest first.
+          items: { $ref: "#/components/schemas/CommentaryEntry" }
+    AnalysisOver:
+      type: object
+      properties:
+        over: { type: integer }
+        runs: { type: integer }
+        wickets: { type: integer }
+        runRate: { type: number, description: "Cumulative runs/over up to and including this over." }
+    WicketType:
+      type: object
+      properties:
+        label: { type: string }
+        count: { type: integer }
+    MatchAnalysis:
+      type: object
+      description: >-
+        Powers Manhattan / Run-rate / Worm / Wicket-type charts. innings3/4 and their
+        wicket-type arrays are TEST-only. All wicketTypes arrays MUST share label order.
+      properties:
+        innings1:
+          type: array
+          items: { $ref: "#/components/schemas/AnalysisOver" }
+        innings2:
+          type: array
+          items: { $ref: "#/components/schemas/AnalysisOver" }
+        innings3:
+          type: array
+          items: { $ref: "#/components/schemas/AnalysisOver" }
+        innings4:
+          type: array
+          items: { $ref: "#/components/schemas/AnalysisOver" }
+        innings1WicketTypes:
+          type: array
+          items: { $ref: "#/components/schemas/WicketType" }
+        innings2WicketTypes:
+          type: array
+          items: { $ref: "#/components/schemas/WicketType" }
+        innings3WicketTypes:
+          type: array
+          items: { $ref: "#/components/schemas/WicketType" }
+        innings4WicketTypes:
+          type: array
+          items: { $ref: "#/components/schemas/WicketType" }
+    HeroBatting:
+      type: object
+      properties:
+        runs: { type: integer }
+        balls: { type: integer }
+        fours: { type: integer }
+        sixes: { type: integer }
+        strikeRate: { type: number }
+    HeroBowling:
+      type: object
+      properties:
+        overs: { type: number }
+        maidens: { type: integer }
+        runs: { type: integer }
+        wickets: { type: integer }
+        economy: { type: number }
+    HeroPlayer:
+      type: object
+      description: Include batting OR bowling (or both); omit irrelevant block.
+      properties:
+        name: { type: string }
+        team: { type: string }
+        imageUrl: { type: string, description: "Empty string allowed." }
+        batting: { $ref: "#/components/schemas/HeroBatting" }
+        bowling: { $ref: "#/components/schemas/HeroBowling" }
+    MatchHeroes:
+      type: object
+      properties:
+        playerOfMatch: { $ref: "#/components/schemas/HeroPlayer" }
+        bestBatter: { $ref: "#/components/schemas/HeroPlayer" }
+        bestBowler: { $ref: "#/components/schemas/HeroPlayer" }
+    MvpPlayer:
+      type: object
+      properties:
+        rank: { type: integer }
+        name: { type: string }
+        team: { type: string }
+        imageUrl: { type: string }
+        batting: { type: number }
+        bowling: { type: number }
+        fielding: { type: number }
+        total: { type: number }
+    CricketInningsTiming:
+      type: object
+      properties:
+        label: { type: string, description: "'e.g. \"1st Innings\", \"Innings Break\".'" }
+        durationMins: { type: integer }
+        from: { type: string, description: "Pre-formatted display string." }
+        to: { type: string }
+    CricketMatchDetail:
+      type: object
+      description: >-
+        Full scorecard page. startTime/matchDate/lastUpdated and innings[].from/to are
+        pre-formatted display strings rendered verbatim. videoEmbedUrl must be empty
+        or a youtube.com / player.vimeo.com URL.
+      required: [slug]
+      properties:
+        slug: { type: string }
+        tournament: { type: string }
+        seriesName: { type: string }
+        status:
+          type: string
+          enum: [Past, Live, Upcoming]
+        stage: { type: string }
+        venue: { type: string }
+        city: { type: string }
+        location: { type: string, description: "Display string." }
+        overs: { type: string, description: "Format used per innings." }
+        startTime: { type: string, description: "Display string (already formatted)." }
+        matchDate: { type: string, description: "Display string." }
+        homeTeam: { $ref: "#/components/schemas/CricketTeamScore" }
+        awayTeam: { $ref: "#/components/schemas/CricketTeamScore" }
+        toss: { type: string }
+        result: { type: string, description: "Empty string allowed." }
+        topBatters:
+          type: array
+          items: { $ref: "#/components/schemas/CricketBatter" }
+        topBowlers:
+          type: array
+          items: { $ref: "#/components/schemas/CricketBowler" }
+        scorecardInnings:
+          type: array
+          items: { $ref: "#/components/schemas/ScorecardInnings" }
+        commentary:
+          type: array
+          items: { $ref: "#/components/schemas/CommentaryInnings" }
+        analysis: { $ref: "#/components/schemas/MatchAnalysis" }
+        heroes: { $ref: "#/components/schemas/MatchHeroes" }
+        mvp:
+          type: array
+          items: { $ref: "#/components/schemas/MvpPlayer" }
+        videoEmbedUrl: { type: string, description: "Empty string when no video; else youtube/vimeo host only." }
+        streamTitle: { type: string }
+        rightsHolder: { type: string }
+        totalViews: { type: integer }
+        liveViewers: { type: integer }
+        innings:
+          type: array
+          items: { $ref: "#/components/schemas/CricketInningsTiming" }
+        lastUpdated: { type: string, description: "Display string." }
+        lastUpdatedBy: { type: string }
+    CricketLiveBatter:
+      type: object
+      properties:
+        name: { type: string }
+        onStrike: { type: boolean }
+        runs: { type: integer }
+        balls: { type: integer }
+    CricketLiveBowler:
+      type: object
+      properties:
+        name: { type: string }
+        overs: { type: number }
+        maidens: { type: integer }
+        runs: { type: integer }
+        wickets: { type: integer }
+    CricketLiveTeam:
+      type: object
+      properties:
+        name: { type: string }
+        score: { type: string }
+        overs: { type: string }
+        batFirst: { type: boolean }
+    CricketLive:
+      type: object
+      properties:
+        slug: { type: string }
+        status: { type: string, example: LIVE }
+        homeTeam: { $ref: "#/components/schemas/CricketLiveTeam" }
+        awayTeam: { $ref: "#/components/schemas/CricketLiveTeam" }
+        target: { type: [integer, "null"], description: "Null in 1st innings." }
+        required:
+          oneOf:
+            - type: object
+              properties:
+                runs: { type: integer }
+                balls: { type: integer }
+                runRate: { type: number }
+            - { type: "null" }
+          description: Null in 1st innings.
+        currentBatters:
+          type: array
+          items: { $ref: "#/components/schemas/CricketLiveBatter" }
+        currentBowler: { $ref: "#/components/schemas/CricketLiveBowler" }
+        lastBalls:
+          type: array
+          description: Most recent over, newest right.
+          items: { type: string }
+        lastUpdated: { type: string, format: date-time }
+
+    # ==================== GOLF ====================
+    GolfFormat:
+      type: string
+      enum: [STROKE_PLAY, MATCH_PLAY, TEAM_COMPETITION]
+    GolfThru:
+      oneOf:
+        - { type: integer, minimum: 0, maximum: 18 }
+        - { type: string, enum: ["F"] }
+      description: Holes completed in the current round (0..18) or "F" for finished.
+    GolfLeader:
+      type: object
+      properties:
+        rank: { type: integer }
+        name: { type: string }
+        country: { type: string, description: "ISO 3-letter code." }
+        total: { type: integer, description: "Strokes vs par (0 = even, negative = under)." }
+        today: { type: integer }
+        thru: { $ref: "#/components/schemas/GolfThru" }
+        strokes: { type: integer }
+    GolfScoreboardStrokePlay:
+      type: object
+      properties:
+        par: { type: integer }
+        rounds: { type: integer }
+        currentRound: { type: integer }
+        leaders:
+          type: array
+          description: Top N, ordered. May be truncated server-side.
+          items: { $ref: "#/components/schemas/GolfLeader" }
+    GolfScoreboardMatchPlay:
+      type: object
+      properties:
+        homePlayer: { type: string }
+        awayPlayer: { type: string }
+        homeUp: { type: integer, description: "Negative when away is up; 0 when AS." }
+        holesRemaining: { type: integer }
+        holesPlayed: { type: integer }
+        resultLabel: { type: string, description: "'e.g. \"3 & 2\".'" }
+    GolfScoreboardTeamComp:
+      type: object
+      properties:
+        homeTeam: { type: string }
+        awayTeam: { type: string }
+        homeTeamPoints: { type: number, description: "Halves count as 0.5." }
+        awayTeamPoints: { type: number }
+        totalPoints: { type: number }
+        resultLabel: { type: string }
+    GolfScoreboard:
+      type: object
+      description: Exactly one of strokePlay / matchPlay / teamCompetition is non-null, matching `format`.
+      properties:
+        format: { $ref: "#/components/schemas/GolfFormat" }
+        winner: { type: string, description: "Player/team name, or \"\" for tied team events." }
+        strokePlay:
+          oneOf:
+            - { $ref: "#/components/schemas/GolfScoreboardStrokePlay" }
+            - { type: "null" }
+        matchPlay:
+          oneOf:
+            - { $ref: "#/components/schemas/GolfScoreboardMatchPlay" }
+            - { type: "null" }
+        teamCompetition:
+          oneOf:
+            - { $ref: "#/components/schemas/GolfScoreboardTeamComp" }
+            - { type: "null" }
+    FeaturedGolfSummary:
+      type: object
+      description: Golf variant of the past-featured summary.
+      required: [slug, sport]
+      properties:
+        embedSlug: { type: string }
+        slug: { type: string }
+        sport: { type: string, example: GOLF }
+        tournament: { type: string }
+        homeTeam: { type: string }
+        awayTeam: { type: string, description: "Empty string indicates a stroke-play tournament card." }
+        startTime: { type: string, format: date-time }
+        venue: { type: string }
+        derived:
+          type: object
+          properties:
+            wonBy: { type: string }
+            comment: { type: string }
+        scoreboard: { $ref: "#/components/schemas/GolfScoreboard" }
+    GolfSummaryStrokePlay:
+      type: object
+      properties:
+        par: { type: integer }
+        rounds: { type: integer }
+        currentRound: { type: integer, description: "0 for upcoming." }
+        leader:
+          oneOf:
+            - type: object
+              properties:
+                name: { type: string }
+                country: { type: string }
+                total: { type: integer }
+                today: { type: integer }
+                thru: { $ref: "#/components/schemas/GolfThru" }
+            - { type: "null" }
+          description: Null for upcoming.
+        fieldSize: { type: integer, description: "Optional." }
+    GolfSummaryMatchPlay:
+      type: object
+      properties:
+        homePlayer: { type: string }
+        awayPlayer: { type: string }
+        homeUp: { type: integer }
+        holesRemaining: { type: integer }
+        resultLabel: { type: string }
+    GolfSummaryTeamComp:
+      type: object
+      properties:
+        homeTeam: { type: string }
+        awayTeam: { type: string }
+        homeTeamPoints: { type: number }
+        awayTeamPoints: { type: number }
+        totalPoints: { type: number }
+    GolfSummaryResult:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [WIN, TIE, NO_RESULT]
+        label: { type: string }
+    GolfSummary:
+      type: object
+      description: Golf summary card. Exactly one body block matches `format`.
+      required: [slug, sport, format, status]
+      properties:
+        slug: { type: string }
+        embedSlug: { type: string }
+        sport: { type: string, example: GOLF }
+        format: { $ref: "#/components/schemas/GolfFormat" }
+        tournament: { type: string }
+        tournamentLabel: { type: string }
+        status:
+          type: string
+          enum: [UPCOMING, LIVE, RESULT]
+        startTime: { type: string, format: date-time }
+        venue: { type: string }
+        venueLabel: { type: string }
+        strokePlay:
+          oneOf:
+            - { $ref: "#/components/schemas/GolfSummaryStrokePlay" }
+            - { type: "null" }
+        matchPlay:
+          oneOf:
+            - { $ref: "#/components/schemas/GolfSummaryMatchPlay" }
+            - { type: "null" }
+        teamCompetition:
+          oneOf:
+            - { $ref: "#/components/schemas/GolfSummaryTeamComp" }
+            - { type: "null" }
+        result:
+          oneOf:
+            - { $ref: "#/components/schemas/GolfSummaryResult" }
+            - { type: "null" }
+    GolfRoundHole:
+      type: object
+      properties:
+        hole: { type: integer, minimum: 1, maximum: 18 }
+        par: { type: integer }
+        yards: { type: integer }
+        strokes: { type: integer }
+    GolfRound:
+      type: object
+      properties:
+        round: { type: integer }
+        strokes: { type: integer }
+        vsPar: { type: integer }
+        tee: { type: string, description: "Optional scheduled tee time as display string." }
+        holes:
+          type: array
+          description: 18 entries when complete; shorter while in progress.
+          items: { $ref: "#/components/schemas/GolfRoundHole" }
+    GolfLeaderboardEntry:
+      type: object
+      description: Stroke-play leaderboard row (display).
+      properties:
+        rank: { type: integer, description: "Numeric rank; client renders ties as \"T1\"." }
+        tied: { type: boolean }
+        name: { type: string }
+        playerId: { type: [string, "null"], description: "Optional FK to Player.slug." }
+        country: { type: string, description: "ISO 3-letter code." }
+        imageUrl: { type: string, description: "Empty string allowed." }
+        total: { type: integer }
+        today: { type: integer }
+        thru: { $ref: "#/components/schemas/GolfThru" }
+        strokes: { type: integer }
+        status:
+          type: string
+          enum: [ACTIVE, CUT, WD, DQ]
+        rounds:
+          type: array
+          items: { $ref: "#/components/schemas/GolfRound" }
+    GolfMatchPlayHole:
+      type: object
+      properties:
+        hole: { type: integer, minimum: 1, maximum: 18 }
+        par: { type: integer }
+        homeStrokes: { type: integer }
+        awayStrokes: { type: integer }
+        status:
+          type: string
+          enum: [HOME, AWAY, HALVED]
+    GolfMatchPlayCard:
+      type: object
+      properties:
+        homePlayer: { type: string }
+        awayPlayer: { type: string }
+        homePlayerId: { type: [string, "null"] }
+        awayPlayerId: { type: [string, "null"] }
+        homeCountry: { type: string }
+        awayCountry: { type: string }
+        holesPlayed: { type: integer }
+        holesRemaining: { type: integer }
+        homeUp: { type: integer, description: "Negative when away is up; 0 when AS." }
+        resultLabel: { type: string, description: "Empty while in progress." }
+        holes:
+          type: array
+          items: { $ref: "#/components/schemas/GolfMatchPlayHole" }
+    GolfPairing:
+      type: object
+      properties:
+        order: { type: integer }
+        homePlayers:
+          type: array
+          items: { type: string }
+        awayPlayers:
+          type: array
+          items: { type: string }
+        homeUp: { type: integer }
+        holesPlayed: { type: integer }
+        holesRemaining: { type: integer }
+        status:
+          type: string
+          enum: [IN_PROGRESS, HOME_WIN, AWAY_WIN, HALVED]
+        resultLabel: { type: string }
+        pointsHome: { type: [number, "null"], description: "0, 0.5, or 1 once complete." }
+        pointsAway: { type: [number, "null"] }
+    GolfSession:
+      type: object
+      properties:
+        name: { type: string }
+        sessionFormat:
+          type: string
+          enum: [FOURSOMES, FOURBALLS, SINGLES]
+        order: { type: integer, description: "1-based." }
+        status:
+          type: string
+          enum: [SCHEDULED, LIVE, COMPLETED]
+        pairings:
+          type: array
+          items: { $ref: "#/components/schemas/GolfPairing" }
+    GolfTeamCompetitionDetail:
+      type: object
+      properties:
+        homeTeam: { type: string }
+        awayTeam: { type: string }
+        homeTeamPoints: { type: number, description: "Halves count as 0.5." }
+        awayTeamPoints: { type: number }
+        totalPoints: { type: number }
+        winningPoints: { type: number, description: "Points needed to win." }
+        resultLabel: { type: string, description: "Empty while in progress." }
+        sessions:
+          type: array
+          items: { $ref: "#/components/schemas/GolfSession" }
+    GolfHighlight:
+      type: object
+      properties:
+        title: { type: string }
+        playerName: { type: string }
+        round: { type: integer }
+        hole: { type: integer }
+        videoEmbedUrl: { type: string, description: "youtube.com / player.vimeo.com only." }
+        thumbnailUrl: { type: string }
+    GolfEventDetail:
+      type: object
+      description: >-
+        Full golf event detail. For stroke play, matchPlayCard/teamCompetition are null
+        (and vice versa). startTime/eventDate/lastUpdated are pre-formatted display strings.
+      required: [slug, format]
+      properties:
+        slug: { type: string }
+        tournament: { type: string }
+        seriesName: { type: string }
+        status:
+          type: string
+          enum: [Past, Live, Upcoming]
+        format: { $ref: "#/components/schemas/GolfFormat" }
+        stage: { type: [string, "null"], description: "'e.g. \"Round 3\", \"Quarter Final\", \"Singles\".'" }
+        venue: { type: string }
+        city: { type: string }
+        location: { type: string, description: "Display string." }
+        courseName: { type: string }
+        coursePar: { type: integer }
+        courseYards: { type: integer, description: "Optional." }
+        rounds: { type: integer, description: "Total scheduled rounds." }
+        currentRound: { type: integer, description: "0 when upcoming; equals rounds when complete." }
+        cutLine: { type: [integer, "null"], description: "Stroke play only; integer vs par or null." }
+        startTime: { type: string, description: "Display string." }
+        eventDate: { type: string, description: "Display string." }
+        result: { type: string, description: "Free text; empty string when no result." }
+        leaderboard:
+          type: array
+          description: Stroke play (and team competition by team). MUST be sorted by rank ascending.
+          items: { $ref: "#/components/schemas/GolfLeaderboardEntry" }
+        matchPlayCard:
+          oneOf:
+            - { $ref: "#/components/schemas/GolfMatchPlayCard" }
+            - { type: "null" }
+        teamCompetition:
+          oneOf:
+            - { $ref: "#/components/schemas/GolfTeamCompetitionDetail" }
+            - { type: "null" }
+        highlights:
+          type: array
+          items: { $ref: "#/components/schemas/GolfHighlight" }
+        videoEmbedUrl: { type: string, description: "Empty string when no video; else youtube/vimeo host only." }
+        streamTitle: { type: string }
+        rightsHolder: { type: string }
+        totalViews: { type: integer }
+        liveViewers: { type: integer }
+        lastUpdated: { type: string, description: "Display string." }
+        lastUpdatedBy: { type: string }
+    GolfLiveLeader:
+      type: object
+      properties:
+        rank: { type: integer }
+        name: { type: string }
+        total: { type: integer }
+        today: { type: integer }
+        thru: { $ref: "#/components/schemas/GolfThru" }
+        country: { type: string }
+    GolfLive:
+      type: object
+      description: Lightweight live golf payload. Exactly one body block matches `format`.
+      properties:
+        slug: { type: string }
+        status: { type: string, example: LIVE }
+        format: { $ref: "#/components/schemas/GolfFormat" }
+        currentRound: { type: integer }
+        leaderboard:
+          type: array
+          description: Top N only, already sorted (stroke play).
+          items: { $ref: "#/components/schemas/GolfLiveLeader" }
+        matchPlay:
+          oneOf:
+            - type: object
+              properties:
+                homeUp: { type: integer }
+                holesRemaining: { type: integer }
+                currentHole: { type: integer }
+                resultLabel: { type: string }
+            - { type: "null" }
+        teamCompetition:
+          oneOf:
+            - type: object
+              properties:
+                homeTeamPoints: { type: number }
+                awayTeamPoints: { type: number }
+                liveSession: { type: string }
+            - { type: "null" }
+        lastUpdated: { type: string, format: date-time }
+
+    # -------- Golf details (stored on Match.details) --------
+    GolfStoredLeaderboardEntry:
+      type: object
+      required: [rank, name]
+      properties:
+        rank: { type: integer, minimum: 1 }
+        tied: { type: boolean }
+        name: { type: string }
+        playerId: { type: [string, "null"] }
+        country: { type: string, description: "ISO 3-letter." }
+        total: { type: [number, "null"], description: "vs par." }
+        today: { type: [number, "null"] }
+        thru:
+          oneOf:
+            - { type: integer, minimum: 0, maximum: 18 }
+            - { type: string, enum: ["F"] }
+            - { type: "null" }
+        strokes: { type: [number, "null"] }
+        status:
+          type: string
+          enum: [ACTIVE, CUT, WD, DQ]
+        rounds:
+          type: array
+          items: { $ref: "#/components/schemas/GolfRound" }
+    GolfStoredMatchPlay:
+      type: object
+      properties:
+        homePlayer: { type: string }
+        awayPlayer: { type: string }
+        homePlayerId: { type: [string, "null"] }
+        awayPlayerId: { type: [string, "null"] }
+        homeCountry: { type: string }
+        awayCountry: { type: string }
+        holesPlayed: { type: [number, "null"], minimum: 0, maximum: 18 }
+        holesRemaining: { type: [number, "null"], minimum: 0, maximum: 18 }
+        homeUp: { type: [number, "null"], description: "Negative when away is up." }
+        resultLabel: { type: [string, "null"] }
+        holes:
+          type: array
+          items: { $ref: "#/components/schemas/GolfMatchPlayHole" }
+    GolfStoredTeamCompetition:
+      type: object
+      properties:
+        homeTeam: { type: string }
+        awayTeam: { type: string }
+        homeTeamPoints: { type: [number, "null"], description: "0.5 increments." }
+        awayTeamPoints: { type: [number, "null"] }
+        totalPoints: { type: [number, "null"] }
+        winningPoints: { type: [number, "null"] }
+        resultLabel: { type: [string, "null"] }
+        sessions:
+          type: array
+          items: { $ref: "#/components/schemas/GolfSession" }
+
+    # ==================== CRICKET LEGACY ====================
+    CricScoreTeam:
+      type: object
+      properties:
+        name: { type: string }
+        score: { type: [number, "null"] }
+        overs: { type: [number, "null"] }
+        wickets: { type: [number, "null"] }
+    CricScore:
+      type: object
+      description: Deprecated legacy cric-score record.
+      properties:
+        id: { type: string }
+        matchTitle: { type: string }
+        team1: { $ref: "#/components/schemas/CricScoreTeam" }
+        team2: { $ref: "#/components/schemas/CricScoreTeam" }
+        status:
+          type: string
+          enum: [upcoming, live, completed]
+        venue: { type: [string, "null"] }
+        matchDate: { type: [string, "null"], format: date-time }
+        matchType:
+          type: string
+          enum: [ODI, T20, Test, Other]
+        result: { type: [string, "null"] }
+    CricScoreInput:
+      type: object
+      required: [matchTitle, team1, team2, status, matchType]
+      properties:
+        matchTitle: { type: string }
+        team1: { $ref: "#/components/schemas/CricScoreTeam" }
+        team2: { $ref: "#/components/schemas/CricScoreTeam" }
+        status:
+          type: string
+          enum: [upcoming, live, completed]
+        venue: { type: [string, "null"] }
+        matchDate: { type: [string, "null"], format: date-time }
+        matchType:
+          type: string
+          enum: [ODI, T20, Test, Other]
+        result: { type: [string, "null"] }
