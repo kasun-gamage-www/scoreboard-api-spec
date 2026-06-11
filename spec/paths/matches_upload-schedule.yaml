@@ -4,10 +4,11 @@ post:
   operationId: matchUploadSchedule
   summary: Bulk-import matches from CSV / Excel
   description: >-
-    Protected. Each row becomes one Match. Rows that fail validation are
+    Admin-only. Each row becomes one Match. Rows that fail validation are
     reported in `errors[]` but do not abort the import unless every row fails
-    (then 422). Column order: homeTeamName, awayTeamName, sport, matchType?,
-    scheduledAt?, venue?, status?, notes?.
+    (then 422). The uploaded file is capped at 10 MB (413 beyond that). Column
+    order: homeTeamName, awayTeamName, sport, matchType?, scheduledAt?, venue?,
+    status?, notes?.
   security:
     - accessToken: []
   requestBody:
@@ -17,6 +18,10 @@ post:
         schema:
           $ref: ../components/schemas/ScheduleUploadRequest.yaml
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '200':
       description: Import summary.
       content:
@@ -31,6 +36,14 @@ post:
             $ref: ../components/schemas/Error.yaml
           example:
             error: No file uploaded
+    '413':
+      description: File exceeds the 10 MB upload cap.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: File too large
     '422':
       description: All rows failed validation.
       content:

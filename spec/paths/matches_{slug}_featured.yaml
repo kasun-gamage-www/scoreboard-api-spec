@@ -4,11 +4,17 @@ put:
   tags:
     - Matches
   operationId: matchFeaturedSet
+  security:
+    - accessToken: []
   summary: Mark a match as featured
   description: >-
     The backend MUST atomically unset `featured` on any previously featured
     match in the same transaction (at-most-one invariant).
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '200':
       description: 'The now-featured match (`featured: true`).'
       content:
@@ -21,7 +27,13 @@ delete:
   tags:
     - Matches
   operationId: matchFeaturedClear
+  security:
+    - accessToken: []
   summary: Clear the featured flag (no-op if not featured)
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '204':
       description: Cleared.

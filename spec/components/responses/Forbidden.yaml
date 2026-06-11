@@ -1,0 +1,7 @@
+description: No token sent, or the authenticated account lacks the ADMIN privilege.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/Error.yaml
+    example:
+      error: Admin privileges required!

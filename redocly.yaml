@@ -11,7 +11,7 @@ extends:
   - recommended
 
 rules:
-  # CRUD endpoints are intentionally unprotected in the current implementation
-  # (documented in info.description); only media/upload routes enforce the JWT.
-  # Don't force a security scheme onto every operation.
+  # Mutating endpoints declare `accessToken` security (admin-gated since the
+  # 2026-06 auth hardening), but public read surfaces are intentionally open —
+  # don't force a security scheme onto every operation.
   security-defined: off

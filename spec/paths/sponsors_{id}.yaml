@@ -9,9 +9,15 @@ delete:
   tags:
     - Sponsors
   operationId: sponsorDelete
+  security:
+    - accessToken: []
   summary: Delete a sponsor by id
   description: There is intentionally no GET-by-id and no PUT; edits = delete + recreate.
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '204':
       description: Deleted.
     '404':

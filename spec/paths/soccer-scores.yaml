@@ -20,6 +20,8 @@ post:
   tags:
     - Soccer Legacy
   operationId: soccerScoreCreate
+  security:
+    - accessToken: []
   deprecated: true
   summary: '[Deprecated] Create a legacy soccer-score'
   requestBody:
@@ -29,6 +31,10 @@ post:
         schema:
           $ref: ../components/schemas/SoccerScoreInput.yaml
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '201':
       description: Created.
       content:

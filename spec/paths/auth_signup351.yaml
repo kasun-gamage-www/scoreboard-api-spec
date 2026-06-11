@@ -4,10 +4,12 @@ post:
   operationId: authSignup
   summary: Create a new account
   description: >-
-    The obfuscated suffix `351` is part of the canonical path. The client sends
-    a `passHash` (client-side hashed), but the backend MUST still apply its own
-    server-side hash (e.g. bcrypt/argon2) before storing and MUST NOT store the
-    value verbatim.
+    The obfuscated suffix `351` is part of the canonical path. Send the
+    plaintext password in `password` (the legacy `passHash` field name is still
+    accepted as an alias); the backend bcrypt-hashes it before storing and
+    never stores the value verbatim. Accounts are always created with USER
+    privilege — `priv` in the request body is ignored; admins are promoted
+    out-of-band.
   requestBody:
     required: true
     content:

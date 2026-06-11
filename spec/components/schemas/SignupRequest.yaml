@@ -1,10 +1,16 @@
 type: object
 required:
   - username
-  - passHash
+  - password
 properties:
   username:
     type: string
+  password:
+    type: string
+    description: Plaintext password. The backend bcrypt-hashes it before storing.
   passHash:
     type: string
-    description: Client-side hashed password. The backend MUST re-hash before storing.
+    deprecated: true
+    description: >-
+      Legacy alias for `password` (older clients). Treated as the plaintext
+      password and bcrypt-hashed server-side — never stored verbatim.

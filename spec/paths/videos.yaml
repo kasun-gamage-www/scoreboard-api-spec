@@ -16,6 +16,8 @@ post:
   tags:
     - Videos
   operationId: videoCreate
+  security:
+    - accessToken: []
   summary: Create a video
   requestBody:
     required: true
@@ -24,6 +26,10 @@ post:
         schema:
           $ref: ../components/schemas/VideoInput.yaml
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '201':
       description: Created.
       content:

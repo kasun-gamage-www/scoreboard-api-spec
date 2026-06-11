@@ -18,6 +18,8 @@ put:
   tags:
     - Tournaments
   operationId: tournamentReplace
+  security:
+    - accessToken: []
   summary: Full replacement of a tournament
   requestBody:
     required: true
@@ -26,6 +28,10 @@ put:
         schema:
           $ref: ../components/schemas/TournamentInput.yaml
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '200':
       description: Updated.
       content:
@@ -38,10 +44,16 @@ delete:
   tags:
     - Tournaments
   operationId: tournamentDelete
+  security:
+    - accessToken: []
   summary: Delete a tournament
   description: >-
     Does NOT cascade. The backend SHOULD reject the delete while referencing
     matches/events exist, or null out `tournamentSlug` on referencing rows.
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '204':
       description: Deleted.

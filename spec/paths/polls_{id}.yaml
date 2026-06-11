@@ -19,6 +19,8 @@ put:
   tags:
     - Polls
   operationId: pollReplace
+  security:
+    - accessToken: []
   summary: Replace a poll (admin)
   description: >-
     Options stay a flat string array. The backend preserves existing
@@ -32,6 +34,10 @@ put:
         schema:
           $ref: ../components/schemas/PollInput.yaml
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '200':
       description: Updated.
       content:
@@ -44,9 +50,15 @@ delete:
   tags:
     - Polls
   operationId: pollDelete
+  security:
+    - accessToken: []
   summary: Delete a poll (admin)
   description: Also discards all of its votes and dedupe records.
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '204':
       description: Deleted.
     '404':

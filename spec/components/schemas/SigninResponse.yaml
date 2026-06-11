@@ -17,4 +17,6 @@ properties:
         description: Stable user id.
       priv:
         type: string
-        description: '''Privilege / role marker (e.g. "admin").'''
+        description: >-
+          Privilege / role marker (`USER` or `ADMIN`). Mutating endpoints
+          require `ADMIN`.

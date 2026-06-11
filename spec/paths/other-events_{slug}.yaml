@@ -18,6 +18,8 @@ put:
   tags:
     - Other Events
   operationId: otherEventReplace
+  security:
+    - accessToken: []
   summary: Full replacement of an other event
   requestBody:
     required: true
@@ -26,6 +28,10 @@ put:
         schema:
           $ref: ../components/schemas/OtherEventInput.yaml
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '200':
       description: Updated.
       content:
@@ -38,7 +44,13 @@ delete:
   tags:
     - Other Events
   operationId: otherEventDelete
+  security:
+    - accessToken: []
   summary: Delete an other event
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '204':
       description: Deleted.

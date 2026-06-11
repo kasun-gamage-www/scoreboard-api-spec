@@ -21,6 +21,8 @@ put:
   tags:
     - Rugby Legacy
   operationId: rugbyScoreReplace
+  security:
+    - accessToken: []
   deprecated: true
   summary: '[Deprecated] Replace a legacy rugby-score'
   requestBody:
@@ -30,6 +32,10 @@ put:
         schema:
           $ref: ../components/schemas/RugbyScoreInput.yaml
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '200':
       description: Updated.
       content:
@@ -40,9 +46,15 @@ delete:
   tags:
     - Rugby Legacy
   operationId: rugbyScoreDelete
+  security:
+    - accessToken: []
   deprecated: true
   summary: '[Deprecated] Delete a legacy rugby-score'
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '200':
       description: Deleted.
       content:

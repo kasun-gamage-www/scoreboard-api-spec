@@ -16,6 +16,8 @@ post:
   tags:
     - Articles
   operationId: articleCreate
+  security:
+    - accessToken: []
   summary: Create an article
   requestBody:
     required: true
@@ -24,6 +26,10 @@ post:
         schema:
           $ref: ../components/schemas/ArticleInput.yaml
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '201':
       description: Created.
       content:

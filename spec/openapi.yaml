@@ -67,18 +67,22 @@ info:
     and `POST /auth/signup351`.
 
 
-    Today, only media-presign / delete and the per-resource `/<resource>/upload`
+    Every mutating endpoint (POST / PUT / DELETE — resource CRUD, media
 
-    aliases (plus `POST /matches/upload-schedule`) are enforced in code.
-    Resource
+    presign / delete, the per-resource `/<resource>/upload` aliases, bulk
 
-    CRUD is **not** protected in the current implementation — this is documented
-    as
+    schedule import) plus `GET /user` requires the token to belong to an
 
-    an existing gap, not the intended long-term contract, and such routes SHOULD
-    be
+    **ADMIN** account. Sign-up always creates USER accounts (`priv` in the
 
-    locked behind `x-access-token` in production.
+    request body is ignored); admins are promoted out-of-band. Public read
+
+    surfaces, the auth endpoints and `POST /polls/{id}/vote` need no token.
+
+
+    Failure modes: missing token or a non-admin account → **403**; a malformed
+
+    or expired token → **401**.
 
 
     ## Slugs
@@ -111,6 +115,12 @@ info:
     All non-2xx responses use the project-wide error shape:
 
     `{ "error": "human-readable message", "code": "OPTIONAL_MACHINE_CODE" }`.
+
+    In production, 5xx bodies carry a generic message instead of the raw
+
+    internal error. Unknown `/api/*` paths return a JSON 404
+
+    (`{ "error": "Not found" }`) rather than the SPA's `index.html`.
   contact:
     name: Scoreboard Platform
   license:

@@ -34,11 +34,15 @@ info:
     (NOT `Authorization: Bearer …`). The token is issued by `POST /auth/signin1988`
     and `POST /auth/signup351`.
 
-    Today, only media-presign / delete and the per-resource `/<resource>/upload`
-    aliases (plus `POST /matches/upload-schedule`) are enforced in code. Resource
-    CRUD is **not** protected in the current implementation — this is documented as
-    an existing gap, not the intended long-term contract, and such routes SHOULD be
-    locked behind `x-access-token` in production.
+    Every mutating endpoint (POST / PUT / DELETE — resource CRUD, media
+    presign / delete, the per-resource `/<resource>/upload` aliases, bulk
+    schedule import) plus `GET /user` requires the token to belong to an
+    **ADMIN** account. Sign-up always creates USER accounts (`priv` in the
+    request body is ignored); admins are promoted out-of-band. Public read
+    surfaces, the auth endpoints and `POST /polls/{id}/vote` need no token.
+
+    Failure modes: missing token or a non-admin account → **403**; a malformed
+    or expired token → **401**.
 
     ## Slugs
     Most resources are addressed by a backend-generated URL-friendly `slug`
@@ -55,6 +59,9 @@ info:
     ## Error format
     All non-2xx responses use the project-wide error shape:
     `{ "error": "human-readable message", "code": "OPTIONAL_MACHINE_CODE" }`.
+    In production, 5xx bodies carry a generic message instead of the raw
+    internal error. Unknown `/api/*` paths return a JSON 404
+    (`{ "error": "Not found" }`) rather than the SPA's `index.html`.
   contact:
     name: Scoreboard Platform
   license:
@@ -156,7 +163,7 @@ paths:
         - Auth
       operationId: authSignup
       summary: Create a new account
-      description: The obfuscated suffix `351` is part of the canonical path. The client sends a `passHash` (client-side hashed), but the backend MUST still apply its own server-side hash (e.g. bcrypt/argon2) before storing and MUST NOT store the value verbatim.
+      description: The obfuscated suffix `351` is part of the canonical path. Send the plaintext password in `password` (the legacy `passHash` field name is still accepted as an alias); the backend bcrypt-hashes it before storing and never stores the value verbatim. Accounts are always created with USER privilege — `priv` in the request body is ignored; admins are promoted out-of-band.
       requestBody:
         required: true
         content:
@@ -191,8 +198,10 @@ paths:
       tags:
         - Users
       operationId: userList
+      security:
+        - accessToken: []
       summary: List users
-      description: Returns all users, newest first. `passHash` is stripped from the response. Reachable with and without the `/api` prefix. Not protected in the current implementation — SHOULD be locked behind `x-access-token` in production.
+      description: Admin-only. Returns all users, newest first. `passHash` is stripped from the response. Reachable with and without the `/api` prefix.
       responses:
         '200':
           description: Users (newest first).
@@ -202,6 +211,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /media/presign:
     post:
       tags:
@@ -242,6 +255,8 @@ paths:
                     error: Invalid filename
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /media:
     delete:
       tags:
@@ -270,6 +285,8 @@ paths:
                 error: Key outside scoreboard/ prefix
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /articles/upload:
     post:
       tags:
@@ -286,6 +303,8 @@ paths:
           $ref: '#/components/responses/Presign'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /clubs/upload:
     post:
       tags:
@@ -301,6 +320,8 @@ paths:
           $ref: '#/components/responses/Presign'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /photos/upload:
     post:
       tags:
@@ -316,6 +337,8 @@ paths:
           $ref: '#/components/responses/Presign'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /players/upload:
     post:
       tags:
@@ -331,6 +354,8 @@ paths:
           $ref: '#/components/responses/Presign'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /sponsors/upload:
     post:
       tags:
@@ -346,6 +371,8 @@ paths:
           $ref: '#/components/responses/Presign'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /teams/upload:
     post:
       tags:
@@ -361,6 +388,8 @@ paths:
           $ref: '#/components/responses/Presign'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /tournaments/upload:
     post:
       tags:
@@ -376,6 +405,8 @@ paths:
           $ref: '#/components/responses/Presign'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /venues/upload:
     post:
       tags:
@@ -391,6 +422,8 @@ paths:
           $ref: '#/components/responses/Presign'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /videos/upload:
     post:
       tags:
@@ -407,6 +440,8 @@ paths:
           $ref: '#/components/responses/Presign'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /articles:
     get:
       tags:
@@ -426,6 +461,8 @@ paths:
       tags:
         - Articles
       operationId: articleCreate
+      security:
+        - accessToken: []
       summary: Create an article
       requestBody:
         required: true
@@ -440,6 +477,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Article'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /articles/popular:
     get:
       tags:
@@ -495,6 +536,8 @@ paths:
       tags:
         - Articles
       operationId: articleReplace
+      security:
+        - accessToken: []
       summary: Full replacement of an article
       requestBody:
         required: true
@@ -509,16 +552,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Article'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundArticle'
     delete:
       tags:
         - Articles
       operationId: articleDelete
+      security:
+        - accessToken: []
       summary: Delete an article
       responses:
         '204':
           description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /clubs:
     get:
       tags:
@@ -538,6 +591,8 @@ paths:
       tags:
         - Clubs
       operationId: clubCreate
+      security:
+        - accessToken: []
       summary: Create a club
       requestBody:
         required: true
@@ -552,6 +607,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Club'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /clubs/{slug}:
     parameters:
       - $ref: '#/components/parameters/Slug'
@@ -573,6 +632,8 @@ paths:
       tags:
         - Clubs
       operationId: clubReplace
+      security:
+        - accessToken: []
       summary: Full replacement of a club
       requestBody:
         required: true
@@ -587,16 +648,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Club'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundClub'
     delete:
       tags:
         - Clubs
       operationId: clubDelete
+      security:
+        - accessToken: []
       summary: Delete a club
       responses:
         '204':
           description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /players:
     get:
       tags:
@@ -618,6 +689,8 @@ paths:
       tags:
         - Players
       operationId: playerCreate
+      security:
+        - accessToken: []
       summary: Create a player
       requestBody:
         required: true
@@ -632,6 +705,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Player'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /players/{slug}:
     parameters:
       - $ref: '#/components/parameters/Slug'
@@ -653,6 +730,8 @@ paths:
       tags:
         - Players
       operationId: playerReplace
+      security:
+        - accessToken: []
       summary: Full replacement of a player
       requestBody:
         required: true
@@ -667,16 +746,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Player'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundPlayer'
     delete:
       tags:
         - Players
       operationId: playerDelete
+      security:
+        - accessToken: []
       summary: Delete a player
       responses:
         '204':
           description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /teams:
     get:
       tags:
@@ -698,6 +787,8 @@ paths:
       tags:
         - Teams
       operationId: teamCreate
+      security:
+        - accessToken: []
       summary: Create a team
       requestBody:
         required: true
@@ -712,6 +803,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Team'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /teams/{slug}:
     parameters:
       - $ref: '#/components/parameters/Slug'
@@ -733,6 +828,8 @@ paths:
       tags:
         - Teams
       operationId: teamReplace
+      security:
+        - accessToken: []
       summary: Full replacement of a team
       requestBody:
         required: true
@@ -747,16 +844,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Team'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundTeam'
     delete:
       tags:
         - Teams
       operationId: teamDelete
+      security:
+        - accessToken: []
       summary: Delete a team
       responses:
         '204':
           description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /tournaments:
     get:
       tags:
@@ -777,6 +884,8 @@ paths:
       tags:
         - Tournaments
       operationId: tournamentCreate
+      security:
+        - accessToken: []
       summary: Create a tournament
       requestBody:
         required: true
@@ -791,6 +900,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Tournament'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /tournaments/{slug}:
     parameters:
       - $ref: '#/components/parameters/Slug'
@@ -812,6 +925,8 @@ paths:
       tags:
         - Tournaments
       operationId: tournamentReplace
+      security:
+        - accessToken: []
       summary: Full replacement of a tournament
       requestBody:
         required: true
@@ -826,17 +941,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Tournament'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundTournament'
     delete:
       tags:
         - Tournaments
       operationId: tournamentDelete
+      security:
+        - accessToken: []
       summary: Delete a tournament
       description: Does NOT cascade. The backend SHOULD reject the delete while referencing matches/events exist, or null out `tournamentSlug` on referencing rows.
       responses:
         '204':
           description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /venues:
     get:
       tags:
@@ -856,6 +981,8 @@ paths:
       tags:
         - Venues
       operationId: venueCreate
+      security:
+        - accessToken: []
       summary: Create a venue
       requestBody:
         required: true
@@ -870,6 +997,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Venue'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /venues/{slug}:
     parameters:
       - $ref: '#/components/parameters/Slug'
@@ -891,6 +1022,8 @@ paths:
       tags:
         - Venues
       operationId: venueReplace
+      security:
+        - accessToken: []
       summary: Full replacement of a venue
       requestBody:
         required: true
@@ -905,16 +1038,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Venue'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundVenue'
     delete:
       tags:
         - Venues
       operationId: venueDelete
+      security:
+        - accessToken: []
       summary: Delete a venue
       responses:
         '204':
           description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /photos:
     get:
       tags:
@@ -934,6 +1077,8 @@ paths:
       tags:
         - Photos
       operationId: photoCreate
+      security:
+        - accessToken: []
       summary: Create a photo
       requestBody:
         required: true
@@ -948,6 +1093,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Photo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /photos/{slug}:
     parameters:
       - $ref: '#/components/parameters/Slug'
@@ -969,6 +1118,8 @@ paths:
       tags:
         - Photos
       operationId: photoReplace
+      security:
+        - accessToken: []
       summary: Full replacement of a photo
       requestBody:
         required: true
@@ -983,16 +1134,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Photo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundPhoto'
     delete:
       tags:
         - Photos
       operationId: photoDelete
+      security:
+        - accessToken: []
       summary: Delete a photo
       responses:
         '204':
           description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /videos:
     get:
       tags:
@@ -1012,6 +1173,8 @@ paths:
       tags:
         - Videos
       operationId: videoCreate
+      security:
+        - accessToken: []
       summary: Create a video
       requestBody:
         required: true
@@ -1026,6 +1189,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Video'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /videos/{slug}:
     parameters:
       - $ref: '#/components/parameters/Slug'
@@ -1047,6 +1214,8 @@ paths:
       tags:
         - Videos
       operationId: videoReplace
+      security:
+        - accessToken: []
       summary: Full replacement of a video
       requestBody:
         required: true
@@ -1061,16 +1230,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Video'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundVideo'
     delete:
       tags:
         - Videos
       operationId: videoDelete
+      security:
+        - accessToken: []
       summary: Delete a video
       responses:
         '204':
           description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /sponsors:
     get:
       tags:
@@ -1090,6 +1269,8 @@ paths:
       tags:
         - Sponsors
       operationId: sponsorCreate
+      security:
+        - accessToken: []
       summary: Create a sponsor
       requestBody:
         required: true
@@ -1104,6 +1285,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Sponsor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /sponsors/{id}:
     parameters:
       - name: id
@@ -1116,11 +1301,17 @@ paths:
       tags:
         - Sponsors
       operationId: sponsorDelete
+      security:
+        - accessToken: []
       summary: Delete a sponsor by id
       description: There is intentionally no GET-by-id and no PUT; edits = delete + recreate.
       responses:
         '204':
           description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: Sponsor not found.
           content:
@@ -1148,6 +1339,8 @@ paths:
       tags:
         - Other Events
       operationId: otherEventCreate
+      security:
+        - accessToken: []
       summary: Create an other event
       requestBody:
         required: true
@@ -1162,6 +1355,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OtherEvent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /other-events/{slug}:
     parameters:
       - $ref: '#/components/parameters/Slug'
@@ -1183,6 +1380,8 @@ paths:
       tags:
         - Other Events
       operationId: otherEventReplace
+      security:
+        - accessToken: []
       summary: Full replacement of an other event
       requestBody:
         required: true
@@ -1197,16 +1396,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OtherEvent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundOtherEvent'
     delete:
       tags:
         - Other Events
       operationId: otherEventDelete
+      security:
+        - accessToken: []
       summary: Delete an other event
       responses:
         '204':
           description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /matches:
     get:
       tags:
@@ -1227,6 +1436,8 @@ paths:
       tags:
         - Matches
       operationId: matchCreate
+      security:
+        - accessToken: []
       summary: Create a match
       description: '`featured` is read-only here (ignored; defaults to false). If `tournamentSlug` is set and `details.cricketFormat` is missing/null, the tournament''s `cricketFormat` is inherited and persisted onto the match.'
       requestBody:
@@ -1242,6 +1453,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Match'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /matches/featured:
     get:
       tags:
@@ -1278,6 +1493,8 @@ paths:
       tags:
         - Matches
       operationId: matchReplace
+      security:
+        - accessToken: []
       summary: Full replacement of a match
       description: Full document replacement — NOT a deep merge. Unknown `details.*` keys (e.g. another sport's scoring keys) MUST be preserved verbatim. `featured` is ignored here. Cricket-format inheritance from the linked tournament applies as on create.
       requestBody:
@@ -1293,16 +1510,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Match'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundMatch'
     delete:
       tags:
         - Matches
       operationId: matchDelete
+      security:
+        - accessToken: []
       summary: Delete a match
       responses:
         '204':
           description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /matches/{slug}/featured:
     parameters:
       - $ref: '#/components/parameters/Slug'
@@ -1310,6 +1537,8 @@ paths:
       tags:
         - Matches
       operationId: matchFeaturedSet
+      security:
+        - accessToken: []
       summary: Mark a match as featured
       description: The backend MUST atomically unset `featured` on any previously featured match in the same transaction (at-most-one invariant).
       responses:
@@ -1319,23 +1548,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Match'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundMatch'
     delete:
       tags:
         - Matches
       operationId: matchFeaturedClear
+      security:
+        - accessToken: []
       summary: Clear the featured flag (no-op if not featured)
       responses:
         '204':
           description: Cleared.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /matches/upload-schedule:
     post:
       tags:
         - Matches
       operationId: matchUploadSchedule
       summary: Bulk-import matches from CSV / Excel
-      description: 'Protected. Each row becomes one Match. Rows that fail validation are reported in `errors[]` but do not abort the import unless every row fails (then 422). Column order: homeTeamName, awayTeamName, sport, matchType?, scheduledAt?, venue?, status?, notes?.'
+      description: 'Admin-only. Each row becomes one Match. Rows that fail validation are reported in `errors[]` but do not abort the import unless every row fails (then 422). The uploaded file is capped at 10 MB (413 beyond that). Column order: homeTeamName, awayTeamName, sport, matchType?, scheduledAt?, venue?, status?, notes?.'
       security:
         - accessToken: []
       requestBody:
@@ -1359,6 +1598,18 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: No file uploaded
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: File exceeds the 10 MB upload cap.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: File too large
         '422':
           description: All rows failed validation.
           content:
@@ -1418,6 +1669,8 @@ paths:
       tags:
         - Polls
       operationId: pollCreate
+      security:
+        - accessToken: []
       summary: Create a poll (admin)
       description: '`options` is a flat array of plain strings; the backend assigns each a stable `id`. Defaults `status` to DRAFT so the poll is hidden until activated.'
       requestBody:
@@ -1433,6 +1686,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Poll'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /polls/{id}:
     parameters:
       - $ref: '#/components/parameters/PollId'
@@ -1455,6 +1712,8 @@ paths:
       tags:
         - Polls
       operationId: pollReplace
+      security:
+        - accessToken: []
       summary: Replace a poll (admin)
       description: Options stay a flat string array. The backend preserves existing `options[].id`/`votes` for matching (case-insensitive) strings, assigns a fresh id (votes 0) to new strings, and drops options no longer present (destroying their votes).
       requestBody:
@@ -1470,17 +1729,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Poll'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundPoll'
     delete:
       tags:
         - Polls
       operationId: pollDelete
+      security:
+        - accessToken: []
       summary: Delete a poll (admin)
       description: Also discards all of its votes and dedupe records.
       responses:
         '204':
           description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundPoll'
   /polls/{id}/vote:
@@ -2058,6 +2327,8 @@ paths:
       tags:
         - Cricket Legacy
       operationId: cricScoreCreate
+      security:
+        - accessToken: []
       deprecated: true
       summary: '[Deprecated] Create a legacy cric-score'
       requestBody:
@@ -2073,6 +2344,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CricScore'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /cric-scores/status/{status}:
     get:
       tags:
@@ -2123,6 +2398,8 @@ paths:
       tags:
         - Cricket Legacy
       operationId: cricScoreReplace
+      security:
+        - accessToken: []
       deprecated: true
       summary: '[Deprecated] Replace a legacy cric-score'
       requestBody:
@@ -2138,10 +2415,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CricScore'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
     delete:
       tags:
         - Cricket Legacy
       operationId: cricScoreDelete
+      security:
+        - accessToken: []
       deprecated: true
       summary: '[Deprecated] Delete a legacy cric-score'
       responses:
@@ -2155,6 +2438,10 @@ paths:
                   message:
                     type: string
                     example: Score deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /rugby-scores:
     get:
       tags:
@@ -2176,6 +2463,8 @@ paths:
       tags:
         - Rugby Legacy
       operationId: rugbyScoreCreate
+      security:
+        - accessToken: []
       deprecated: true
       summary: '[Deprecated] Create a legacy rugby-score'
       requestBody:
@@ -2191,6 +2480,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RugbyScore'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /rugby-scores/status/{status}:
     get:
       tags:
@@ -2241,6 +2534,8 @@ paths:
       tags:
         - Rugby Legacy
       operationId: rugbyScoreReplace
+      security:
+        - accessToken: []
       deprecated: true
       summary: '[Deprecated] Replace a legacy rugby-score'
       requestBody:
@@ -2256,10 +2551,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RugbyScore'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
     delete:
       tags:
         - Rugby Legacy
       operationId: rugbyScoreDelete
+      security:
+        - accessToken: []
       deprecated: true
       summary: '[Deprecated] Delete a legacy rugby-score'
       responses:
@@ -2273,6 +2574,10 @@ paths:
                   message:
                     type: string
                     example: Score deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /soccer-scores:
     get:
       tags:
@@ -2294,6 +2599,8 @@ paths:
       tags:
         - Soccer Legacy
       operationId: soccerScoreCreate
+      security:
+        - accessToken: []
       deprecated: true
       summary: '[Deprecated] Create a legacy soccer-score'
       requestBody:
@@ -2309,6 +2616,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SoccerScore'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /soccer-scores/status/{status}:
     get:
       tags:
@@ -2359,6 +2670,8 @@ paths:
       tags:
         - Soccer Legacy
       operationId: soccerScoreReplace
+      security:
+        - accessToken: []
       deprecated: true
       summary: '[Deprecated] Replace a legacy soccer-score'
       requestBody:
@@ -2374,10 +2687,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SoccerScore'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
     delete:
       tags:
         - Soccer Legacy
       operationId: soccerScoreDelete
+      security:
+        - accessToken: []
       deprecated: true
       summary: '[Deprecated] Delete a legacy soccer-score'
       responses:
@@ -2391,6 +2710,10 @@ paths:
                   message:
                     type: string
                     example: Score deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 components:
   securitySchemes:
     accessToken:
@@ -2429,7 +2752,7 @@ components:
               description: Stable user id.
             priv:
               type: string
-              description: '''Privilege / role marker (e.g. "admin").'''
+              description: Privilege / role marker (`USER` or `ADMIN`). Mutating endpoints require `ADMIN`.
     Error:
       type: object
       description: Project-wide error shape.
@@ -2446,13 +2769,17 @@ components:
       type: object
       required:
         - username
-        - passHash
+        - password
       properties:
         username:
           type: string
+        password:
+          type: string
+          description: Plaintext password. The backend bcrypt-hashes it before storing.
         passHash:
           type: string
-          description: Client-side hashed password. The backend MUST re-hash before storing.
+          deprecated: true
+          description: Legacy alias for `password` (older clients). Treated as the plaintext password and bcrypt-hashed server-side — never stored verbatim.
     SignupResponse:
       type: object
       required:
@@ -2481,7 +2808,7 @@ components:
         priv:
           type: string
           default: USER
-          description: '''Privilege / role marker (e.g. "USER", "admin").'''
+          description: Privilege / role marker (`USER` or `ADMIN`). Mutating endpoints require `ADMIN`. Sign-up always assigns `USER`.
         createdAt:
           $ref: '#/components/schemas/Timestamp'
         updatedAt:
@@ -7207,6 +7534,14 @@ components:
             $ref: '#/components/schemas/Error'
           example:
             error: Unauthorized
+    Forbidden:
+      description: No token sent, or the authenticated account lacks the ADMIN privilege.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Admin privileges required!
     Presign:
       description: Presigned upload details (folder fixed by the alias).
       content:

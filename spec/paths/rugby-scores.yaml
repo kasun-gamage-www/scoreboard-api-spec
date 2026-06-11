@@ -20,6 +20,8 @@ post:
   tags:
     - Rugby Legacy
   operationId: rugbyScoreCreate
+  security:
+    - accessToken: []
   deprecated: true
   summary: '[Deprecated] Create a legacy rugby-score'
   requestBody:
@@ -29,6 +31,10 @@ post:
         schema:
           $ref: ../components/schemas/RugbyScoreInput.yaml
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '201':
       description: Created.
       content:

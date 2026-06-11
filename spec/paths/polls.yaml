@@ -56,6 +56,8 @@ post:
   tags:
     - Polls
   operationId: pollCreate
+  security:
+    - accessToken: []
   summary: Create a poll (admin)
   description: >-
     `options` is a flat array of plain strings; the backend assigns each a
@@ -68,6 +70,10 @@ post:
         schema:
           $ref: ../components/schemas/PollInput.yaml
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '201':
       description: Created (full Poll shape; totalVotes 0; options have ids).
       content:

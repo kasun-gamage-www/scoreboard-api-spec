@@ -18,6 +18,8 @@ put:
   tags:
     - Venues
   operationId: venueReplace
+  security:
+    - accessToken: []
   summary: Full replacement of a venue
   requestBody:
     required: true
@@ -26,6 +28,10 @@ put:
         schema:
           $ref: ../components/schemas/VenueInput.yaml
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '200':
       description: Updated.
       content:
@@ -38,7 +44,13 @@ delete:
   tags:
     - Venues
   operationId: venueDelete
+  security:
+    - accessToken: []
   summary: Delete a venue
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '204':
       description: Deleted.

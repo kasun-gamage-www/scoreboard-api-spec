@@ -18,6 +18,8 @@ put:
   tags:
     - Matches
   operationId: matchReplace
+  security:
+    - accessToken: []
   summary: Full replacement of a match
   description: >-
     Full document replacement — NOT a deep merge. Unknown `details.*` keys (e.g.
@@ -31,6 +33,10 @@ put:
         schema:
           $ref: ../components/schemas/MatchInput.yaml
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '200':
       description: Updated.
       content:
@@ -43,7 +49,13 @@ delete:
   tags:
     - Matches
   operationId: matchDelete
+  security:
+    - accessToken: []
   summary: Delete a match
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '204':
       description: Deleted.

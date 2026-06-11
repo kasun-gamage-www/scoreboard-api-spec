@@ -13,7 +13,9 @@ properties:
   priv:
     type: string
     default: USER
-    description: '''Privilege / role marker (e.g. "USER", "admin").'''
+    description: >-
+      Privilege / role marker (`USER` or `ADMIN`). Mutating endpoints require
+      `ADMIN`. Sign-up always assigns `USER`.
   createdAt:
     $ref: ./Timestamp.yaml
   updatedAt:

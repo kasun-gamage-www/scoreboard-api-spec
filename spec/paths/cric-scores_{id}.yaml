@@ -21,6 +21,8 @@ put:
   tags:
     - Cricket Legacy
   operationId: cricScoreReplace
+  security:
+    - accessToken: []
   deprecated: true
   summary: '[Deprecated] Replace a legacy cric-score'
   requestBody:
@@ -30,6 +32,10 @@ put:
         schema:
           $ref: ../components/schemas/CricScoreInput.yaml
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '200':
       description: Updated.
       content:
@@ -40,9 +46,15 @@ delete:
   tags:
     - Cricket Legacy
   operationId: cricScoreDelete
+  security:
+    - accessToken: []
   deprecated: true
   summary: '[Deprecated] Delete a legacy cric-score'
   responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
     '200':
       description: Deleted.
       content:
