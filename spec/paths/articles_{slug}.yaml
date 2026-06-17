@@ -19,7 +19,7 @@ put:
     - Articles
   operationId: articleReplace
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Full replacement of an article
   requestBody:
     required: true
@@ -45,7 +45,7 @@ delete:
     - Articles
   operationId: articleDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Delete an article
   responses:
     '401':

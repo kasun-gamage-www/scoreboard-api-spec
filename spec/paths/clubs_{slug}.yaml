@@ -19,7 +19,7 @@ put:
     - Clubs
   operationId: clubReplace
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Full replacement of a club
   requestBody:
     required: true
@@ -45,7 +45,7 @@ delete:
     - Clubs
   operationId: clubDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Delete a club
   responses:
     '401':

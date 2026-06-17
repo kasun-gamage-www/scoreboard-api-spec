@@ -1,7 +1,0 @@
-type: object
-required:
-  - token
-properties:
-  token:
-    type: string
-    description: JWT for the newly created account.

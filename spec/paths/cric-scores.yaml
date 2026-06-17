@@ -21,7 +21,7 @@ post:
     - Cricket Legacy
   operationId: cricScoreCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   deprecated: true
   summary: '[Deprecated] Create a legacy cric-score'
   requestBody:

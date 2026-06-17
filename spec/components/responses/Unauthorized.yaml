@@ -1,4 +1,4 @@
-description: Missing or invalid `x-access-token`.
+description: 'Missing, malformed, expired or revoked Firebase ID token (`Authorization: Bearer`).'
 content:
   application/json:
     schema:

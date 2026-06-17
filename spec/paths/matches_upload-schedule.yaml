@@ -10,7 +10,7 @@ post:
     order: homeTeamName, awayTeamName, sport, matchType?, scheduledAt?, venue?,
     status?, notes?.
   security:
-    - accessToken: []
+    - firebaseAuth: []
   requestBody:
     required: true
     content:

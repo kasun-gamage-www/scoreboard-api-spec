@@ -11,7 +11,7 @@ extends:
   - recommended
 
 rules:
-  # Mutating endpoints declare `accessToken` security (admin-gated since the
-  # 2026-06 auth hardening), but public read surfaces are intentionally open —
-  # don't force a security scheme onto every operation.
+  # Mutating endpoints declare `firebaseAuth` security (admin-gated), but public
+  # read surfaces are intentionally open — don't force a security scheme onto
+  # every operation.
   security-defined: off

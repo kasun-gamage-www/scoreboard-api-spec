@@ -18,7 +18,7 @@ post:
     - Matches
   operationId: matchCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Create a match
   description: >-
     `featured` is read-only here (ignored; defaults to false). If

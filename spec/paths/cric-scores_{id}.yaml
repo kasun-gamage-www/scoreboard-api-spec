@@ -22,7 +22,7 @@ put:
     - Cricket Legacy
   operationId: cricScoreReplace
   security:
-    - accessToken: []
+    - firebaseAuth: []
   deprecated: true
   summary: '[Deprecated] Replace a legacy cric-score'
   requestBody:
@@ -47,7 +47,7 @@ delete:
     - Cricket Legacy
   operationId: cricScoreDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   deprecated: true
   summary: '[Deprecated] Delete a legacy cric-score'
   responses:

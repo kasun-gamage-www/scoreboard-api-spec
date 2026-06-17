@@ -19,7 +19,7 @@ put:
     - Tournaments
   operationId: tournamentReplace
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Full replacement of a tournament
   requestBody:
     required: true
@@ -45,7 +45,7 @@ delete:
     - Tournaments
   operationId: tournamentDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Delete a tournament
   description: >-
     Does NOT cascade. The backend SHOULD reject the delete while referencing

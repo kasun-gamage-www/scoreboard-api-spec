@@ -59,30 +59,31 @@ info:
 
     ## Authentication
 
-    Protected endpoints require a JWT sent in the **`x-access-token`** header
+    Protected endpoints require a **Firebase ID token** sent as
 
-    (NOT `Authorization: Bearer …`). The token is issued by `POST
-    /auth/signin1988`
+    `Authorization: Bearer <token>`. Clients obtain it via Firebase
 
-    and `POST /auth/signup351`.
+    Authentication (email/password); the API verifies it with the Firebase
+
+    Admin SDK. This API exposes no sign-in / sign-up endpoints.
 
 
     Every mutating endpoint (POST / PUT / DELETE — resource CRUD, media
 
     presign / delete, the per-resource `/<resource>/upload` aliases, bulk
 
-    schedule import) plus `GET /user` requires the token to belong to an
+    schedule import) plus `GET /user` requires the token's account to carry the
 
-    **ADMIN** account. Sign-up always creates USER accounts (`priv` in the
+    `admin: true` custom claim. Admins are provisioned out-of-band (created in
 
-    request body is ignored); admins are promoted out-of-band. Public read
+    the Firebase console, then granted the claim). Public read surfaces and
 
-    surfaces, the auth endpoints and `POST /polls/{id}/vote` need no token.
+    `POST /polls/{id}/vote` need no token.
 
 
-    Failure modes: missing token or a non-admin account → **403**; a malformed
+    Failure modes: missing token or a non-admin account → **403**; a malformed,
 
-    or expired token → **401**.
+    expired or revoked token → **401**.
 
 
     ## Slugs
@@ -136,8 +137,6 @@ servers:
           documented paths are reachable with and without an `/api` prefix
           except the deprecated `/cric-scores` family (which is `/api`-only).
 tags:
-  - name: Auth
-    description: Sign-in / sign-up. Issues the `x-access-token` JWT.
   - name: Media
     description: S3 presign / delete contract and per-resource upload aliases.
   - name: Articles
@@ -187,10 +186,6 @@ tags:
   - name: Users
     description: User directory (admin list).
 paths:
-  /auth/signin1988:
-    $ref: paths/auth_signin1988.yaml
-  /auth/signup351:
-    $ref: paths/auth_signup351.yaml
   /user:
     $ref: paths/user.yaml
   /media/presign:
@@ -329,8 +324,12 @@ paths:
     $ref: paths/soccer-scores_{id}.yaml
 components:
   securitySchemes:
-    accessToken:
-      type: apiKey
-      in: header
-      name: x-access-token
-      description: JWT issued by the auth endpoints. Sent verbatim (not as a Bearer token).
+    firebaseAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Firebase ID token
+      description: >-
+        Firebase ID token obtained client-side via Firebase Authentication and
+        sent as `Authorization: Bearer <token>`. Verified server-side with the
+        Firebase Admin SDK; admin routes additionally require the `admin: true`
+        custom claim.

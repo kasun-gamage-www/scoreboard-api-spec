@@ -19,7 +19,7 @@ post:
     - Teams
   operationId: teamCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Create a team
   requestBody:
     required: true

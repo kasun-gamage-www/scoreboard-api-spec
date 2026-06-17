@@ -20,7 +20,7 @@ put:
     - Polls
   operationId: pollReplace
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Replace a poll (admin)
   description: >-
     Options stay a flat string array. The backend preserves existing
@@ -51,7 +51,7 @@ delete:
     - Polls
   operationId: pollDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Delete a poll (admin)
   description: Also discards all of its votes and dedupe records.
   responses:

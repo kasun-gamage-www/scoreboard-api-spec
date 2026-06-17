@@ -5,7 +5,7 @@ post:
   summary: Presign alias (folder hard-coded to `articles`)
   description: Same shape as `/media/presign`; any client `folder` is ignored.
   security:
-    - accessToken: []
+    - firebaseAuth: []
   requestBody:
     $ref: ../components/requestBodies/PresignAlias.yaml
   responses:

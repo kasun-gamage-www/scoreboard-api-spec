@@ -17,7 +17,7 @@ post:
     - Other Events
   operationId: otherEventCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Create an other event
   requestBody:
     required: true

@@ -1,5 +1,6 @@
 type: object
-description: User record as returned by GET /user. `passHash` is never exposed.
+description: >-
+  User record as returned by GET /user, sourced from Firebase Authentication.
 required:
   - id
   - username
@@ -7,16 +8,16 @@ required:
 properties:
   id:
     type: string
-    description: Stable user id.
+    description: Firebase UID.
   username:
     type: string
+    description: Account email address.
   priv:
     type: string
     default: USER
     description: >-
-      Privilege / role marker (`USER` or `ADMIN`). Mutating endpoints require
-      `ADMIN`. Sign-up always assigns `USER`.
+      Privilege / role marker (`USER` or `ADMIN`), derived from the Firebase
+      `admin` custom claim. Mutating endpoints require `ADMIN`.
   createdAt:
     $ref: ./Timestamp.yaml
-  updatedAt:
-    $ref: ./Timestamp.yaml
+    description: Firebase account creation time.

@@ -21,7 +21,7 @@ post:
     - Soccer Legacy
   operationId: soccerScoreCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   deprecated: true
   summary: '[Deprecated] Create a legacy soccer-score'
   requestBody:

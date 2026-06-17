@@ -17,7 +17,7 @@ post:
     - Sponsors
   operationId: sponsorCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Create a sponsor
   requestBody:
     required: true

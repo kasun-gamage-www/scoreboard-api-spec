@@ -19,7 +19,7 @@ post:
     - Players
   operationId: playerCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Create a player
   requestBody:
     required: true

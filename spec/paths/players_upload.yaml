@@ -4,7 +4,7 @@ post:
   operationId: playersUpload
   summary: Presign alias (folder hard-coded to `players`)
   security:
-    - accessToken: []
+    - firebaseAuth: []
   requestBody:
     $ref: ../components/requestBodies/PresignAlias.yaml
   responses:

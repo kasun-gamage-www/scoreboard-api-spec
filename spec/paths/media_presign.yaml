@@ -8,7 +8,7 @@ post:
     public URL to persist. The signature pins content-type and a max byte size,
     so S3 itself rejects oversize / content-type-swapped uploads.
   security:
-    - accessToken: []
+    - firebaseAuth: []
   requestBody:
     required: true
     content:

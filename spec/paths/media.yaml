@@ -7,7 +7,7 @@ delete:
     Admin-only. The backend MUST reject any `key` outside the `scoreboard/`
     prefix with 400, preventing deletion of arbitrary bucket objects.
   security:
-    - accessToken: []
+    - firebaseAuth: []
   requestBody:
     required: true
     content:

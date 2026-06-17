@@ -3,11 +3,12 @@ get:
     - Users
   operationId: userList
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: List users
   description: >-
-    Admin-only. Returns all users, newest first. `passHash` is stripped from
-    the response. Reachable with and without the `/api` prefix.
+    Admin-only. Lists Firebase users, newest first. `username` carries the
+    account email and `priv` is derived from the `admin` custom claim.
+    Reachable with and without the `/api` prefix.
   responses:
     '401':
       $ref: ../components/responses/Unauthorized.yaml

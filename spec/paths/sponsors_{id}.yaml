@@ -10,7 +10,7 @@ delete:
     - Sponsors
   operationId: sponsorDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Delete a sponsor by id
   description: There is intentionally no GET-by-id and no PUT; edits = delete + recreate.
   responses:

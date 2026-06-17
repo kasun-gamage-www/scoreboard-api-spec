@@ -21,7 +21,7 @@ post:
     - Rugby Legacy
   operationId: rugbyScoreCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   deprecated: true
   summary: '[Deprecated] Create a legacy rugby-score'
   requestBody:

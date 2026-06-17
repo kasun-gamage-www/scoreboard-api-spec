@@ -19,7 +19,7 @@ put:
     - Other Events
   operationId: otherEventReplace
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Full replacement of an other event
   requestBody:
     required: true
@@ -45,7 +45,7 @@ delete:
     - Other Events
   operationId: otherEventDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Delete an other event
   responses:
     '401':

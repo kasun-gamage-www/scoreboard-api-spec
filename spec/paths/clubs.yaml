@@ -17,7 +17,7 @@ post:
     - Clubs
   operationId: clubCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Create a club
   requestBody:
     required: true

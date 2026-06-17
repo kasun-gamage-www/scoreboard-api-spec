@@ -30,19 +30,20 @@ info:
     at the host root.
 
     ## Authentication
-    Protected endpoints require a JWT sent in the **`x-access-token`** header
-    (NOT `Authorization: Bearer …`). The token is issued by `POST /auth/signin1988`
-    and `POST /auth/signup351`.
+    Protected endpoints require a **Firebase ID token** sent as
+    `Authorization: Bearer <token>`. Clients obtain it via Firebase
+    Authentication (email/password); the API verifies it with the Firebase
+    Admin SDK. This API exposes no sign-in / sign-up endpoints.
 
     Every mutating endpoint (POST / PUT / DELETE — resource CRUD, media
     presign / delete, the per-resource `/<resource>/upload` aliases, bulk
-    schedule import) plus `GET /user` requires the token to belong to an
-    **ADMIN** account. Sign-up always creates USER accounts (`priv` in the
-    request body is ignored); admins are promoted out-of-band. Public read
-    surfaces, the auth endpoints and `POST /polls/{id}/vote` need no token.
+    schedule import) plus `GET /user` requires the token's account to carry the
+    `admin: true` custom claim. Admins are provisioned out-of-band (created in
+    the Firebase console, then granted the claim). Public read surfaces and
+    `POST /polls/{id}/vote` need no token.
 
-    Failure modes: missing token or a non-admin account → **403**; a malformed
-    or expired token → **401**.
+    Failure modes: missing token or a non-admin account → **403**; a malformed,
+    expired or revoked token → **401**.
 
     ## Slugs
     Most resources are addressed by a backend-generated URL-friendly `slug`
@@ -74,8 +75,6 @@ servers:
         default: http://localhost:8081/api
         description: Root of the API. May or may not include a trailing `/api` segment. All documented paths are reachable with and without an `/api` prefix except the deprecated `/cric-scores` family (which is `/api`-only).
 tags:
-  - name: Auth
-    description: Sign-in / sign-up. Issues the `x-access-token` JWT.
   - name: Media
     description: S3 presign / delete contract and per-resource upload aliases.
   - name: Articles
@@ -121,87 +120,15 @@ tags:
   - name: Users
     description: User directory (admin list).
 paths:
-  /auth/signin1988:
-    post:
-      tags:
-        - Auth
-      operationId: authSignin
-      summary: Exchange username + password for a JWT
-      description: The obfuscated suffix `1988` is part of the canonical path and MUST NOT be normalised away; `/auth/signin` SHOULD return 404. The backend MUST return the same 401 shape whether the username is unknown or the password is wrong, to avoid leaking account existence.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SigninRequest'
-      responses:
-        '200':
-          description: Authenticated.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SigninResponse'
-        '400':
-          description: Missing credentials.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: Missing credentials
-        '401':
-          description: Invalid credentials (identical shape regardless of cause).
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: Invalid credentials
-  /auth/signup351:
-    post:
-      tags:
-        - Auth
-      operationId: authSignup
-      summary: Create a new account
-      description: The obfuscated suffix `351` is part of the canonical path. Send the plaintext password in `password` (the legacy `passHash` field name is still accepted as an alias); the backend bcrypt-hashes it before storing and never stores the value verbatim. Accounts are always created with USER privilege — `priv` in the request body is ignored; admins are promoted out-of-band.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SignupRequest'
-      responses:
-        '200':
-          description: Account created.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SignupResponse'
-        '400':
-          description: Missing fields.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: Missing fields
-        '409':
-          description: Username already taken.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: Username already taken
   /user:
     get:
       tags:
         - Users
       operationId: userList
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: List users
-      description: Admin-only. Returns all users, newest first. `passHash` is stripped from the response. Reachable with and without the `/api` prefix.
+      description: Admin-only. Lists Firebase users, newest first. `username` carries the account email and `priv` is derived from the `admin` custom claim. Reachable with and without the `/api` prefix.
       responses:
         '200':
           description: Users (newest first).
@@ -223,7 +150,7 @@ paths:
       summary: Presign an S3 PUT for a direct browser upload
       description: Admin-only. Returns a short-lived presigned S3 `PUT` plus the canonical public URL to persist. The signature pins content-type and a max byte size, so S3 itself rejects oversize / content-type-swapped uploads.
       security:
-        - accessToken: []
+        - firebaseAuth: []
       requestBody:
         required: true
         content:
@@ -265,7 +192,7 @@ paths:
       summary: Delete an uploaded object by key
       description: Admin-only. The backend MUST reject any `key` outside the `scoreboard/` prefix with 400, preventing deletion of arbitrary bucket objects.
       security:
-        - accessToken: []
+        - firebaseAuth: []
       requestBody:
         required: true
         content:
@@ -295,7 +222,7 @@ paths:
       summary: Presign alias (folder hard-coded to `articles`)
       description: Same shape as `/media/presign`; any client `folder` is ignored.
       security:
-        - accessToken: []
+        - firebaseAuth: []
       requestBody:
         $ref: '#/components/requestBodies/PresignAlias'
       responses:
@@ -312,7 +239,7 @@ paths:
       operationId: clubsUpload
       summary: Presign alias (folder hard-coded to `clubs`)
       security:
-        - accessToken: []
+        - firebaseAuth: []
       requestBody:
         $ref: '#/components/requestBodies/PresignAlias'
       responses:
@@ -329,7 +256,7 @@ paths:
       operationId: photosUpload
       summary: Presign alias (folder hard-coded to `photos`)
       security:
-        - accessToken: []
+        - firebaseAuth: []
       requestBody:
         $ref: '#/components/requestBodies/PresignAlias'
       responses:
@@ -346,7 +273,7 @@ paths:
       operationId: playersUpload
       summary: Presign alias (folder hard-coded to `players`)
       security:
-        - accessToken: []
+        - firebaseAuth: []
       requestBody:
         $ref: '#/components/requestBodies/PresignAlias'
       responses:
@@ -363,7 +290,7 @@ paths:
       operationId: sponsorsUpload
       summary: Presign alias (folder hard-coded to `sponsors`)
       security:
-        - accessToken: []
+        - firebaseAuth: []
       requestBody:
         $ref: '#/components/requestBodies/PresignAlias'
       responses:
@@ -380,7 +307,7 @@ paths:
       operationId: teamsUpload
       summary: Presign alias (folder hard-coded to `teams`)
       security:
-        - accessToken: []
+        - firebaseAuth: []
       requestBody:
         $ref: '#/components/requestBodies/PresignAlias'
       responses:
@@ -397,7 +324,7 @@ paths:
       operationId: tournamentsUpload
       summary: Presign alias (folder hard-coded to `tournaments`)
       security:
-        - accessToken: []
+        - firebaseAuth: []
       requestBody:
         $ref: '#/components/requestBodies/PresignAlias'
       responses:
@@ -414,7 +341,7 @@ paths:
       operationId: venuesUpload
       summary: Presign alias (folder hard-coded to `venues`)
       security:
-        - accessToken: []
+        - firebaseAuth: []
       requestBody:
         $ref: '#/components/requestBodies/PresignAlias'
       responses:
@@ -432,7 +359,7 @@ paths:
       summary: Presign alias (folder hard-coded to `videos`)
       description: The `videos` folder accepts both `image/*` and `video/*` content types, with a higher size cap than image-only folders.
       security:
-        - accessToken: []
+        - firebaseAuth: []
       requestBody:
         $ref: '#/components/requestBodies/PresignAlias'
       responses:
@@ -462,7 +389,7 @@ paths:
         - Articles
       operationId: articleCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Create an article
       requestBody:
         required: true
@@ -537,7 +464,7 @@ paths:
         - Articles
       operationId: articleReplace
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Full replacement of an article
       requestBody:
         required: true
@@ -563,7 +490,7 @@ paths:
         - Articles
       operationId: articleDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Delete an article
       responses:
         '204':
@@ -592,7 +519,7 @@ paths:
         - Clubs
       operationId: clubCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Create a club
       requestBody:
         required: true
@@ -633,7 +560,7 @@ paths:
         - Clubs
       operationId: clubReplace
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Full replacement of a club
       requestBody:
         required: true
@@ -659,7 +586,7 @@ paths:
         - Clubs
       operationId: clubDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Delete a club
       responses:
         '204':
@@ -690,7 +617,7 @@ paths:
         - Players
       operationId: playerCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Create a player
       requestBody:
         required: true
@@ -731,7 +658,7 @@ paths:
         - Players
       operationId: playerReplace
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Full replacement of a player
       requestBody:
         required: true
@@ -757,7 +684,7 @@ paths:
         - Players
       operationId: playerDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Delete a player
       responses:
         '204':
@@ -788,7 +715,7 @@ paths:
         - Teams
       operationId: teamCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Create a team
       requestBody:
         required: true
@@ -829,7 +756,7 @@ paths:
         - Teams
       operationId: teamReplace
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Full replacement of a team
       requestBody:
         required: true
@@ -855,7 +782,7 @@ paths:
         - Teams
       operationId: teamDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Delete a team
       responses:
         '204':
@@ -885,7 +812,7 @@ paths:
         - Tournaments
       operationId: tournamentCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Create a tournament
       requestBody:
         required: true
@@ -926,7 +853,7 @@ paths:
         - Tournaments
       operationId: tournamentReplace
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Full replacement of a tournament
       requestBody:
         required: true
@@ -952,7 +879,7 @@ paths:
         - Tournaments
       operationId: tournamentDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Delete a tournament
       description: Does NOT cascade. The backend SHOULD reject the delete while referencing matches/events exist, or null out `tournamentSlug` on referencing rows.
       responses:
@@ -982,7 +909,7 @@ paths:
         - Venues
       operationId: venueCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Create a venue
       requestBody:
         required: true
@@ -1023,7 +950,7 @@ paths:
         - Venues
       operationId: venueReplace
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Full replacement of a venue
       requestBody:
         required: true
@@ -1049,7 +976,7 @@ paths:
         - Venues
       operationId: venueDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Delete a venue
       responses:
         '204':
@@ -1078,7 +1005,7 @@ paths:
         - Photos
       operationId: photoCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Create a photo
       requestBody:
         required: true
@@ -1119,7 +1046,7 @@ paths:
         - Photos
       operationId: photoReplace
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Full replacement of a photo
       requestBody:
         required: true
@@ -1145,7 +1072,7 @@ paths:
         - Photos
       operationId: photoDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Delete a photo
       responses:
         '204':
@@ -1174,7 +1101,7 @@ paths:
         - Videos
       operationId: videoCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Create a video
       requestBody:
         required: true
@@ -1215,7 +1142,7 @@ paths:
         - Videos
       operationId: videoReplace
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Full replacement of a video
       requestBody:
         required: true
@@ -1241,7 +1168,7 @@ paths:
         - Videos
       operationId: videoDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Delete a video
       responses:
         '204':
@@ -1270,7 +1197,7 @@ paths:
         - Sponsors
       operationId: sponsorCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Create a sponsor
       requestBody:
         required: true
@@ -1302,7 +1229,7 @@ paths:
         - Sponsors
       operationId: sponsorDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Delete a sponsor by id
       description: There is intentionally no GET-by-id and no PUT; edits = delete + recreate.
       responses:
@@ -1340,7 +1267,7 @@ paths:
         - Other Events
       operationId: otherEventCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Create an other event
       requestBody:
         required: true
@@ -1381,7 +1308,7 @@ paths:
         - Other Events
       operationId: otherEventReplace
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Full replacement of an other event
       requestBody:
         required: true
@@ -1407,7 +1334,7 @@ paths:
         - Other Events
       operationId: otherEventDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Delete an other event
       responses:
         '204':
@@ -1437,7 +1364,7 @@ paths:
         - Matches
       operationId: matchCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Create a match
       description: '`featured` is read-only here (ignored; defaults to false). If `tournamentSlug` is set and `details.cricketFormat` is missing/null, the tournament''s `cricketFormat` is inherited and persisted onto the match.'
       requestBody:
@@ -1494,7 +1421,7 @@ paths:
         - Matches
       operationId: matchReplace
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Full replacement of a match
       description: Full document replacement — NOT a deep merge. Unknown `details.*` keys (e.g. another sport's scoring keys) MUST be preserved verbatim. `featured` is ignored here. Cricket-format inheritance from the linked tournament applies as on create.
       requestBody:
@@ -1521,7 +1448,7 @@ paths:
         - Matches
       operationId: matchDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Delete a match
       responses:
         '204':
@@ -1538,7 +1465,7 @@ paths:
         - Matches
       operationId: matchFeaturedSet
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Mark a match as featured
       description: The backend MUST atomically unset `featured` on any previously featured match in the same transaction (at-most-one invariant).
       responses:
@@ -1559,7 +1486,7 @@ paths:
         - Matches
       operationId: matchFeaturedClear
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Clear the featured flag (no-op if not featured)
       responses:
         '204':
@@ -1576,7 +1503,7 @@ paths:
       summary: Bulk-import matches from CSV / Excel
       description: 'Admin-only. Each row becomes one Match. Rows that fail validation are reported in `errors[]` but do not abort the import unless every row fails (then 422). The uploaded file is capped at 10 MB (413 beyond that). Column order: homeTeamName, awayTeamName, sport, matchType?, scheduledAt?, venue?, status?, notes?.'
       security:
-        - accessToken: []
+        - firebaseAuth: []
       requestBody:
         required: true
         content:
@@ -1670,7 +1597,7 @@ paths:
         - Polls
       operationId: pollCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Create a poll (admin)
       description: '`options` is a flat array of plain strings; the backend assigns each a stable `id`. Defaults `status` to DRAFT so the poll is hidden until activated.'
       requestBody:
@@ -1713,7 +1640,7 @@ paths:
         - Polls
       operationId: pollReplace
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Replace a poll (admin)
       description: Options stay a flat string array. The backend preserves existing `options[].id`/`votes` for matching (case-insensitive) strings, assigns a fresh id (votes 0) to new strings, and drops options no longer present (destroying their votes).
       requestBody:
@@ -1740,7 +1667,7 @@ paths:
         - Polls
       operationId: pollDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       summary: Delete a poll (admin)
       description: Also discards all of its votes and dedupe records.
       responses:
@@ -2328,7 +2255,7 @@ paths:
         - Cricket Legacy
       operationId: cricScoreCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       deprecated: true
       summary: '[Deprecated] Create a legacy cric-score'
       requestBody:
@@ -2399,7 +2326,7 @@ paths:
         - Cricket Legacy
       operationId: cricScoreReplace
       security:
-        - accessToken: []
+        - firebaseAuth: []
       deprecated: true
       summary: '[Deprecated] Replace a legacy cric-score'
       requestBody:
@@ -2424,7 +2351,7 @@ paths:
         - Cricket Legacy
       operationId: cricScoreDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       deprecated: true
       summary: '[Deprecated] Delete a legacy cric-score'
       responses:
@@ -2464,7 +2391,7 @@ paths:
         - Rugby Legacy
       operationId: rugbyScoreCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       deprecated: true
       summary: '[Deprecated] Create a legacy rugby-score'
       requestBody:
@@ -2535,7 +2462,7 @@ paths:
         - Rugby Legacy
       operationId: rugbyScoreReplace
       security:
-        - accessToken: []
+        - firebaseAuth: []
       deprecated: true
       summary: '[Deprecated] Replace a legacy rugby-score'
       requestBody:
@@ -2560,7 +2487,7 @@ paths:
         - Rugby Legacy
       operationId: rugbyScoreDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       deprecated: true
       summary: '[Deprecated] Delete a legacy rugby-score'
       responses:
@@ -2600,7 +2527,7 @@ paths:
         - Soccer Legacy
       operationId: soccerScoreCreate
       security:
-        - accessToken: []
+        - firebaseAuth: []
       deprecated: true
       summary: '[Deprecated] Create a legacy soccer-score'
       requestBody:
@@ -2671,7 +2598,7 @@ paths:
         - Soccer Legacy
       operationId: soccerScoreReplace
       security:
-        - accessToken: []
+        - firebaseAuth: []
       deprecated: true
       summary: '[Deprecated] Replace a legacy soccer-score'
       requestBody:
@@ -2696,7 +2623,7 @@ paths:
         - Soccer Legacy
       operationId: soccerScoreDelete
       security:
-        - accessToken: []
+        - firebaseAuth: []
       deprecated: true
       summary: '[Deprecated] Delete a legacy soccer-score'
       responses:
@@ -2716,43 +2643,37 @@ paths:
           $ref: '#/components/responses/Forbidden'
 components:
   securitySchemes:
-    accessToken:
-      type: apiKey
-      in: header
-      name: x-access-token
-      description: JWT issued by the auth endpoints. Sent verbatim (not as a Bearer token).
+    firebaseAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Firebase ID token
+      description: 'Firebase ID token obtained client-side via Firebase Authentication and sent as `Authorization: Bearer <token>`. Verified server-side with the Firebase Admin SDK; admin routes additionally require the `admin: true` custom claim.'
   schemas:
-    SigninRequest:
+    Timestamp:
+      type: string
+      format: date-time
+      description: ISO 8601 timestamp.
+    User:
       type: object
+      description: User record as returned by GET /user, sourced from Firebase Authentication.
       required:
+        - id
         - username
-        - password
+        - priv
       properties:
+        id:
+          type: string
+          description: Firebase UID.
         username:
           type: string
-        password:
+          description: Account email address.
+        priv:
           type: string
-    SigninResponse:
-      type: object
-      required:
-        - token
-        - user
-      properties:
-        token:
-          type: string
-          description: JWT to send as `x-access-token`.
-        user:
-          type: object
-          required:
-            - id
-            - priv
-          properties:
-            id:
-              type: string
-              description: Stable user id.
-            priv:
-              type: string
-              description: Privilege / role marker (`USER` or `ADMIN`). Mutating endpoints require `ADMIN`.
+          default: USER
+          description: Privilege / role marker (`USER` or `ADMIN`), derived from the Firebase `admin` custom claim. Mutating endpoints require `ADMIN`.
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+          description: Firebase account creation time.
     Error:
       type: object
       description: Project-wide error shape.
@@ -2765,54 +2686,6 @@ components:
         code:
           type: string
           description: Optional machine code.
-    SignupRequest:
-      type: object
-      required:
-        - username
-        - password
-      properties:
-        username:
-          type: string
-        password:
-          type: string
-          description: Plaintext password. The backend bcrypt-hashes it before storing.
-        passHash:
-          type: string
-          deprecated: true
-          description: Legacy alias for `password` (older clients). Treated as the plaintext password and bcrypt-hashed server-side — never stored verbatim.
-    SignupResponse:
-      type: object
-      required:
-        - token
-      properties:
-        token:
-          type: string
-          description: JWT for the newly created account.
-    Timestamp:
-      type: string
-      format: date-time
-      description: ISO 8601 timestamp.
-    User:
-      type: object
-      description: User record as returned by GET /user. `passHash` is never exposed.
-      required:
-        - id
-        - username
-        - priv
-      properties:
-        id:
-          type: string
-          description: Stable user id.
-        username:
-          type: string
-        priv:
-          type: string
-          default: USER
-          description: Privilege / role marker (`USER` or `ADMIN`). Mutating endpoints require `ADMIN`. Sign-up always assigns `USER`.
-        createdAt:
-          $ref: '#/components/schemas/Timestamp'
-        updatedAt:
-          $ref: '#/components/schemas/Timestamp'
     MediaFolder:
       type: string
       enum:
@@ -7527,7 +7400,7 @@ components:
             - 'null'
   responses:
     Unauthorized:
-      description: Missing or invalid `x-access-token`.
+      description: 'Missing, malformed, expired or revoked Firebase ID token (`Authorization: Bearer`).'
       content:
         application/json:
           schema:

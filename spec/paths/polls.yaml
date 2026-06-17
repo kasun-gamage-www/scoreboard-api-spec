@@ -57,7 +57,7 @@ post:
     - Polls
   operationId: pollCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Create a poll (admin)
   description: >-
     `options` is a flat array of plain strings; the backend assigns each a

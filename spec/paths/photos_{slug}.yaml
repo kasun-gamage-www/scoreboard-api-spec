@@ -19,7 +19,7 @@ put:
     - Photos
   operationId: photoReplace
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Full replacement of a photo
   requestBody:
     required: true
@@ -45,7 +45,7 @@ delete:
     - Photos
   operationId: photoDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Delete a photo
   responses:
     '401':

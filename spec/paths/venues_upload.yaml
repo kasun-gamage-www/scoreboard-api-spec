@@ -4,7 +4,7 @@ post:
   operationId: venuesUpload
   summary: Presign alias (folder hard-coded to `venues`)
   security:
-    - accessToken: []
+    - firebaseAuth: []
   requestBody:
     $ref: ../components/requestBodies/PresignAlias.yaml
   responses:

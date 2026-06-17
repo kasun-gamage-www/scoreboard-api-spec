@@ -22,7 +22,7 @@ put:
     - Rugby Legacy
   operationId: rugbyScoreReplace
   security:
-    - accessToken: []
+    - firebaseAuth: []
   deprecated: true
   summary: '[Deprecated] Replace a legacy rugby-score'
   requestBody:
@@ -47,7 +47,7 @@ delete:
     - Rugby Legacy
   operationId: rugbyScoreDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   deprecated: true
   summary: '[Deprecated] Delete a legacy rugby-score'
   responses:

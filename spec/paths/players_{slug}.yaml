@@ -19,7 +19,7 @@ put:
     - Players
   operationId: playerReplace
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Full replacement of a player
   requestBody:
     required: true
@@ -45,7 +45,7 @@ delete:
     - Players
   operationId: playerDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Delete a player
   responses:
     '401':

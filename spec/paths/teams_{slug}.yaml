@@ -19,7 +19,7 @@ put:
     - Teams
   operationId: teamReplace
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Full replacement of a team
   requestBody:
     required: true
@@ -45,7 +45,7 @@ delete:
     - Teams
   operationId: teamDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Delete a team
   responses:
     '401':

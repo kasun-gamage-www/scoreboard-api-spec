@@ -18,7 +18,7 @@ post:
     - Tournaments
   operationId: tournamentCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Create a tournament
   requestBody:
     required: true

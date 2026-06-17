@@ -22,7 +22,7 @@ put:
     - Soccer Legacy
   operationId: soccerScoreReplace
   security:
-    - accessToken: []
+    - firebaseAuth: []
   deprecated: true
   summary: '[Deprecated] Replace a legacy soccer-score'
   requestBody:
@@ -47,7 +47,7 @@ delete:
     - Soccer Legacy
   operationId: soccerScoreDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   deprecated: true
   summary: '[Deprecated] Delete a legacy soccer-score'
   responses:

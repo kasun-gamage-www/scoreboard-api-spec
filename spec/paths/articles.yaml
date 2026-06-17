@@ -17,7 +17,7 @@ post:
     - Articles
   operationId: articleCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Create an article
   requestBody:
     required: true

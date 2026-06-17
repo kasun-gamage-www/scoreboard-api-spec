@@ -17,7 +17,7 @@ post:
     - Photos
   operationId: photoCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Create a photo
   requestBody:
     required: true

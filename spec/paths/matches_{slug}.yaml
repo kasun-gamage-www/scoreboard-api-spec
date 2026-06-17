@@ -19,7 +19,7 @@ put:
     - Matches
   operationId: matchReplace
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Full replacement of a match
   description: >-
     Full document replacement — NOT a deep merge. Unknown `details.*` keys (e.g.
@@ -50,7 +50,7 @@ delete:
     - Matches
   operationId: matchDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Delete a match
   responses:
     '401':

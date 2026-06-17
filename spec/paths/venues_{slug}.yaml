@@ -19,7 +19,7 @@ put:
     - Venues
   operationId: venueReplace
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Full replacement of a venue
   requestBody:
     required: true
@@ -45,7 +45,7 @@ delete:
     - Venues
   operationId: venueDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Delete a venue
   responses:
     '401':

@@ -7,7 +7,7 @@ post:
     The `videos` folder accepts both `image/*` and `video/*` content types, with
     a higher size cap than image-only folders.
   security:
-    - accessToken: []
+    - firebaseAuth: []
   requestBody:
     $ref: ../components/requestBodies/PresignAlias.yaml
   responses:

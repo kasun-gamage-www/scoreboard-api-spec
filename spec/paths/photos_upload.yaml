@@ -4,7 +4,7 @@ post:
   operationId: photosUpload
   summary: Presign alias (folder hard-coded to `photos`)
   security:
-    - accessToken: []
+    - firebaseAuth: []
   requestBody:
     $ref: ../components/requestBodies/PresignAlias.yaml
   responses:

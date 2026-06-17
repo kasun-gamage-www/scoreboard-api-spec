@@ -17,7 +17,7 @@ post:
     - Venues
   operationId: venueCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Create a venue
   requestBody:
     required: true

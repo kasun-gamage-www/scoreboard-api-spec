@@ -19,7 +19,7 @@ put:
     - Videos
   operationId: videoReplace
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Full replacement of a video
   requestBody:
     required: true
@@ -45,7 +45,7 @@ delete:
     - Videos
   operationId: videoDelete
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Delete a video
   responses:
     '401':

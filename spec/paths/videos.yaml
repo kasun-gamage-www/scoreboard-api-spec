@@ -17,7 +17,7 @@ post:
     - Videos
   operationId: videoCreate
   security:
-    - accessToken: []
+    - firebaseAuth: []
   summary: Create a video
   requestBody:
     required: true
