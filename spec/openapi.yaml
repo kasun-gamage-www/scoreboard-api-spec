@@ -72,11 +72,17 @@ info:
 
     presign / delete, the per-resource `/<resource>/upload` aliases, bulk
 
-    schedule import) plus `GET /user` requires the token's account to carry the
+    schedule import) plus the `/user` family (`GET /user`, `POST /user`,
 
-    `admin: true` custom claim. Admins are provisioned out-of-band (created in
+    `PUT /user/{uid}`) requires the token's account to carry the `admin: true`
 
-    the Firebase console, then granted the claim). Public read surfaces and
+    custom claim. The first admin is provisioned out-of-band (created in the
+
+    Firebase console, then granted the claim via `scripts/set-admin.js`);
+
+    thereafter an existing admin can create accounts and grant/revoke admin
+
+    through the `/user` endpoints. Public read surfaces and
 
     `POST /polls/{id}/vote` need no token.
 
@@ -184,10 +190,12 @@ tags:
       Deprecated `/api/soccer-scores` routes. Do not build new code against
       these.
   - name: Users
-    description: User directory (admin list).
+    description: Admin user management — list, create, and grant/revoke admin.
 paths:
   /user:
     $ref: paths/user.yaml
+  /user/{uid}:
+    $ref: paths/user_{uid}.yaml
   /media/presign:
     $ref: paths/media_presign.yaml
   /media:

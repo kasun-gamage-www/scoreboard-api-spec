@@ -22,3 +22,42 @@ get:
             type: array
             items:
               $ref: ../components/schemas/User.yaml
+post:
+  tags:
+    - Users
+  operationId: userCreate
+  security:
+    - firebaseAuth: []
+  summary: Create a user
+  description: >-
+    Admin-only. Provisions a new Firebase account (email + password). When
+    `admin` is true the account also receives the `admin` custom claim, so it
+    can administer immediately on first sign-in. Reachable with and without the
+    `/api` prefix.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/UserInput.yaml
+  responses:
+    '400':
+      description: >-
+        Missing/invalid field, or a Firebase rejection (e.g. duplicate email,
+        password shorter than 6 characters).
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: The email address is already in use by another account.
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/User.yaml

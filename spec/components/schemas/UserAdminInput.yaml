@@ -1,0 +1,11 @@
+type: object
+description: Payload for granting/revoking admin on a user (PUT /user/{uid}).
+required:
+  - admin
+properties:
+  admin:
+    type: boolean
+    description: >-
+      `true` grants the `admin` custom claim; `false` clears it. Either way the
+      target's refresh tokens are revoked so the change applies on their next
+      request.

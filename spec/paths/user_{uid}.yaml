@@ -1,0 +1,46 @@
+parameters:
+  - name: uid
+    in: path
+    required: true
+    description: Firebase UID of the target user.
+    schema:
+      type: string
+put:
+  tags:
+    - Users
+  operationId: userSetAdmin
+  security:
+    - firebaseAuth: []
+  summary: Grant or revoke admin
+  description: >-
+    Admin-only. Sets or clears the `admin` custom claim on an existing user and
+    revokes their refresh tokens so the change takes effect on their next
+    request. An admin cannot revoke their own privileges (guards against locking
+    the team out). Reachable with and without the `/api` prefix.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/UserAdminInput.yaml
+  responses:
+    '400':
+      description: '`admin` is not a boolean, or the caller tried to demote themselves.'
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: You cannot revoke your own admin privileges
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../components/responses/NotFoundUser.yaml
+    '200':
+      description: Updated user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/User.yaml

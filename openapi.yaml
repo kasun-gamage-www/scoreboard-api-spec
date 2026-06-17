@@ -37,9 +37,12 @@ info:
 
     Every mutating endpoint (POST / PUT / DELETE — resource CRUD, media
     presign / delete, the per-resource `/<resource>/upload` aliases, bulk
-    schedule import) plus `GET /user` requires the token's account to carry the
-    `admin: true` custom claim. Admins are provisioned out-of-band (created in
-    the Firebase console, then granted the claim). Public read surfaces and
+    schedule import) plus the `/user` family (`GET /user`, `POST /user`,
+    `PUT /user/{uid}`) requires the token's account to carry the `admin: true`
+    custom claim. The first admin is provisioned out-of-band (created in the
+    Firebase console, then granted the claim via `scripts/set-admin.js`);
+    thereafter an existing admin can create accounts and grant/revoke admin
+    through the `/user` endpoints. Public read surfaces and
     `POST /polls/{id}/vote` need no token.
 
     Failure modes: missing token or a non-admin account → **403**; a malformed,
@@ -118,7 +121,7 @@ tags:
   - name: Soccer Legacy
     description: Deprecated `/api/soccer-scores` routes. Do not build new code against these.
   - name: Users
-    description: User directory (admin list).
+    description: Admin user management — list, create, and grant/revoke admin.
 paths:
   /user:
     get:
@@ -142,6 +145,82 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+        - Users
+      operationId: userCreate
+      security:
+        - firebaseAuth: []
+      summary: Create a user
+      description: Admin-only. Provisions a new Firebase account (email + password). When `admin` is true the account also receives the `admin` custom claim, so it can administer immediately on first sign-in. Reachable with and without the `/api` prefix.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Missing/invalid field, or a Firebase rejection (e.g. duplicate email, password shorter than 6 characters).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: The email address is already in use by another account.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /user/{uid}:
+    parameters:
+      - name: uid
+        in: path
+        required: true
+        description: Firebase UID of the target user.
+        schema:
+          type: string
+    put:
+      tags:
+        - Users
+      operationId: userSetAdmin
+      security:
+        - firebaseAuth: []
+      summary: Grant or revoke admin
+      description: Admin-only. Sets or clears the `admin` custom claim on an existing user and revokes their refresh tokens so the change takes effect on their next request. An admin cannot revoke their own privileges (guards against locking the team out). Reachable with and without the `/api` prefix.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserAdminInput'
+      responses:
+        '200':
+          description: Updated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: '`admin` is not a boolean, or the caller tried to demote themselves.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: You cannot revoke your own admin privileges
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFoundUser'
   /media/presign:
     post:
       tags:
@@ -2686,6 +2765,35 @@ components:
         code:
           type: string
           description: Optional machine code.
+    UserInput:
+      type: object
+      description: Payload for creating a Firebase user (POST /user).
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: Account email address; must be unique across the project.
+        password:
+          type: string
+          format: password
+          minLength: 6
+          description: Initial password. Firebase requires at least 6 characters.
+        admin:
+          type: boolean
+          default: false
+          description: When true, the new account is granted the `admin` custom claim.
+    UserAdminInput:
+      type: object
+      description: Payload for granting/revoking admin on a user (PUT /user/{uid}).
+      required:
+        - admin
+      properties:
+        admin:
+          type: boolean
+          description: '`true` grants the `admin` custom claim; `false` clears it. Either way the target''s refresh tokens are revoked so the change applies on their next request.'
     MediaFolder:
       type: string
       enum:
@@ -7415,6 +7523,14 @@ components:
             $ref: '#/components/schemas/Error'
           example:
             error: Admin privileges required!
+    NotFoundUser:
+      description: No user exists for the supplied uid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: There is no user record corresponding to the provided identifier.
     Presign:
       description: Presigned upload details (folder fixed by the alias).
       content:

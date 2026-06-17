@@ -1,0 +1,7 @@
+description: No user exists for the supplied uid.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/Error.yaml
+    example:
+      error: There is no user record corresponding to the provided identifier.

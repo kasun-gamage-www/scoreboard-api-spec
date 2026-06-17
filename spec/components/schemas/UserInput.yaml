@@ -1,0 +1,19 @@
+type: object
+description: Payload for creating a Firebase user (POST /user).
+required:
+  - email
+  - password
+properties:
+  email:
+    type: string
+    format: email
+    description: Account email address; must be unique across the project.
+  password:
+    type: string
+    format: password
+    minLength: 6
+    description: Initial password. Firebase requires at least 6 characters.
+  admin:
+    type: boolean
+    default: false
+    description: When true, the new account is granted the `admin` custom claim.
