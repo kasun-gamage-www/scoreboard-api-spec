@@ -191,7 +191,11 @@ tags:
       these.
   - name: Users
     description: Admin user management — list, create, and grant/revoke admin.
+  - name: System
+    description: Operational endpoints (unauthenticated health probe).
 paths:
+  /health:
+    $ref: paths/health.yaml
   /user:
     $ref: paths/user.yaml
   /user/{uid}:

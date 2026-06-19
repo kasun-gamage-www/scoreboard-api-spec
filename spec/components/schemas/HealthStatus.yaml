@@ -1,0 +1,42 @@
+type: object
+required:
+  - status
+  - environment
+  - version
+  - database
+  - uptime
+  - timestamp
+properties:
+  status:
+    type: string
+    enum:
+      - ok
+      - degraded
+    description: '`ok` when the database is connected; `degraded` otherwise (HTTP 503).'
+  environment:
+    type: string
+    enum:
+      - production
+      - development
+    description: Reported runtime environment (anything other than `production` reports `development`).
+  version:
+    type: string
+    description: Server `package.json` version.
+    example: 1.0.0
+  database:
+    type: string
+    enum:
+      - disconnected
+      - connected
+      - connecting
+      - disconnecting
+      - unknown
+    description: Mongoose connection state.
+  uptime:
+    type: integer
+    description: Process uptime in whole seconds.
+    example: 3600
+  timestamp:
+    type: string
+    format: date-time
+    description: Server time when the probe was answered.

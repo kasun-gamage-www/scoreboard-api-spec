@@ -12,3 +12,10 @@ properties:
   contentType:
     type: string
     example: image/png
+  featured:
+    type: boolean
+    default: false
+    description: >-
+      Honored only by the `articles` alias: when `true`, the image is stored
+      under the `articles/featured/` subfolder (the article hero image).
+      Ignored by every other alias.

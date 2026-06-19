@@ -122,7 +122,32 @@ tags:
     description: Deprecated `/api/soccer-scores` routes. Do not build new code against these.
   - name: Users
     description: Admin user management — list, create, and grant/revoke admin.
+  - name: System
+    description: Operational endpoints (unauthenticated health probe).
 paths:
+  /health:
+    get:
+      tags:
+        - System
+      operationId: healthGet
+      summary: Liveness / readiness probe
+      description: |-
+        Unauthenticated health probe for load balancers and uptime monitors. Returns `200` while the database is connected and `503` (still a JSON body) while it is not, so the load balancer pulls the instance out of rotation instead of routing traffic to a half-up server.
+
+        **`/api`-only:** unlike most routes, this is served **only** under the `/api` prefix (`/api/health`) — it is not mirrored at the host root.
+      responses:
+        '200':
+          description: Service healthy (database connected).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '503':
+          description: Service degraded (database not connected). Same body shape; `status` is `degraded`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
   /user:
     get:
       tags:
@@ -2728,6 +2753,49 @@ components:
       bearerFormat: Firebase ID token
       description: 'Firebase ID token obtained client-side via Firebase Authentication and sent as `Authorization: Bearer <token>`. Verified server-side with the Firebase Admin SDK; admin routes additionally require the `admin: true` custom claim.'
   schemas:
+    HealthStatus:
+      type: object
+      required:
+        - status
+        - environment
+        - version
+        - database
+        - uptime
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - degraded
+          description: '`ok` when the database is connected; `degraded` otherwise (HTTP 503).'
+        environment:
+          type: string
+          enum:
+            - production
+            - development
+          description: Reported runtime environment (anything other than `production` reports `development`).
+        version:
+          type: string
+          description: Server `package.json` version.
+          example: 1.0.0
+        database:
+          type: string
+          enum:
+            - disconnected
+            - connected
+            - connecting
+            - disconnecting
+            - unknown
+          description: Mongoose connection state.
+        uptime:
+          type: integer
+          description: Process uptime in whole seconds.
+          example: 3600
+        timestamp:
+          type: string
+          format: date-time
+          description: Server time when the probe was answered.
     Timestamp:
       type: string
       format: date-time
@@ -2824,6 +2892,10 @@ components:
           example: image/png
         folder:
           $ref: '#/components/schemas/MediaFolder'
+        featured:
+          type: boolean
+          default: false
+          description: 'Effective only when `folder` is `articles`: stores the object under the `articles/featured/` subfolder (the article hero image). Ignored for every other folder.'
     PresignResponse:
       type: object
       required:
@@ -2853,7 +2925,7 @@ components:
             Content-Type: image/png
         key:
           type: string
-          description: S3 object key under the `scoreboard/` prefix.
+          description: 'S3 object key. Most media sits under the `scoreboard/` prefix (`scoreboard/<folder>/...`). **Article** images are the exception: they live in a dedicated bucket with no `scoreboard/` prefix — `articles/...`, or `articles/featured/...` for the hero image.'
           example: scoreboard/sponsors/images/2026/05/uuid.png
         url:
           type: string
@@ -2889,6 +2961,10 @@ components:
         contentType:
           type: string
           example: image/png
+        featured:
+          type: boolean
+          default: false
+          description: 'Honored only by the `articles` alias: when `true`, the image is stored under the `articles/featured/` subfolder (the article hero image). Ignored by every other alias.'
     ArticleCategory:
       type: string
       enum:

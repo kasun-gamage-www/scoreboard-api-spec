@@ -1,0 +1,29 @@
+get:
+  tags:
+    - System
+  operationId: healthGet
+  summary: Liveness / readiness probe
+  description: >-
+    Unauthenticated health probe for load balancers and uptime monitors. Returns
+    `200` while the database is connected and `503` (still a JSON body) while it
+    is not, so the load balancer pulls the instance out of rotation instead of
+    routing traffic to a half-up server.
+
+
+    **`/api`-only:** unlike most routes, this is served **only** under the `/api`
+    prefix (`/api/health`) — it is not mirrored at the host root.
+  responses:
+    '200':
+      description: Service healthy (database connected).
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HealthStatus.yaml
+    '503':
+      description: >-
+        Service degraded (database not connected). Same body shape; `status` is
+        `degraded`.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/HealthStatus.yaml

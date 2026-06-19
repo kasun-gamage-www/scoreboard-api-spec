@@ -26,7 +26,11 @@ properties:
       Content-Type: image/png
   key:
     type: string
-    description: S3 object key under the `scoreboard/` prefix.
+    description: >-
+      S3 object key. Most media sits under the `scoreboard/` prefix
+      (`scoreboard/<folder>/...`). **Article** images are the exception: they
+      live in a dedicated bucket with no `scoreboard/` prefix — `articles/...`,
+      or `articles/featured/...` for the hero image.
     example: scoreboard/sponsors/images/2026/05/uuid.png
   url:
     type: string

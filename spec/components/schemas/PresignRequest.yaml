@@ -14,3 +14,10 @@ properties:
     example: image/png
   folder:
     $ref: ./MediaFolder.yaml
+  featured:
+    type: boolean
+    default: false
+    description: >-
+      Effective only when `folder` is `articles`: stores the object under the
+      `articles/featured/` subfolder (the article hero image). Ignored for every
+      other folder.
