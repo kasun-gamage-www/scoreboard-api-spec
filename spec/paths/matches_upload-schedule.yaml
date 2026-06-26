@@ -7,8 +7,11 @@ post:
     Admin-only. Each row becomes one Match. Rows that fail validation are
     reported in `errors[]` but do not abort the import unless every row fails
     (then 422). The uploaded file is capped at 10 MB (413 beyond that). Column
-    order: homeTeamName, awayTeamName, sport, matchType?, scheduledAt?, venue?,
-    status?, notes?.
+    order: homeTeamName, awayTeamName, sport, matchType?, scheduledAt?, venues?,
+    status?, notes?. `venues` is optional and holds one or more saved venues
+    referenced by Venue.slug or (case-insensitive) name, separated by `;` — each
+    resolves to a Venue.slug on the match. A row naming an unknown venue is
+    skipped with an `Unknown venue: …` error.
   security:
     - firebaseAuth: []
   requestBody:

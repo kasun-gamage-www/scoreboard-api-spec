@@ -33,10 +33,11 @@ properties:
       - string
       - 'null'
     format: date-time
-  location:
-    type:
-      - string
-      - 'null'
+  venues:
+    type: array
+    items:
+      type: string
+    description: Venue.slug references (FK to saved venues); multiple allowed.
   logoUrl:
     type:
       - string

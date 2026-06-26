@@ -2,10 +2,12 @@ get:
   tags:
     - Venues
   operationId: venuesList
-  summary: List all venues
+  summary: List venues (optional name search)
+  parameters:
+    - $ref: ../components/parameters/Search.yaml
   responses:
     '200':
-      description: All venues.
+      description: Venues (filtered by `search` when provided).
       content:
         application/json:
           schema:

@@ -21,10 +21,11 @@ properties:
       - 'null'
   matchType:
     $ref: ./MatchType.yaml
-  venue:
-    type:
-      - string
-      - 'null'
+  venues:
+    type: array
+    items:
+      type: string
+    description: Venue.slug references (FK to saved venues); multiple allowed.
   scheduledAt:
     type:
       - string
