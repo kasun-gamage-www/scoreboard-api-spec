@@ -9,9 +9,10 @@ post:
     (then 422). The uploaded file is capped at 10 MB (413 beyond that). Column
     order: homeTeamName, awayTeamName, sport, matchType?, scheduledAt?, venues?,
     status?, notes?. `venues` is optional and holds one or more saved venues
-    referenced by Venue.slug or (case-insensitive) name, separated by `;` — each
-    resolves to a Venue.slug on the match. A row naming an unknown venue is
-    skipped with an `Unknown venue: …` error.
+    referenced by Venue.slug or (case-insensitive) name, separated by `;`. The
+    first resolves to the match's primary `venue`; any additional venues (rare)
+    populate `secondaryVenues`. A row naming an unknown venue is skipped with an
+    `Unknown venue: …` error.
   security:
     - firebaseAuth: []
   requestBody:

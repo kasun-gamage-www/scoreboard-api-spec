@@ -27,13 +27,20 @@ properties:
     description: FK to Tournament.slug; null for independent/friendly.
   matchType:
     $ref: ./MatchType.yaml
-  venues:
+  venue:
+    type:
+      - string
+      - 'null'
+    description: >-
+      Primary Venue.slug reference (FK to saved venues). Replaces the former
+      free-text venue; null when none is set.
+  secondaryVenues:
     type: array
     items:
       type: string
     description: >-
-      Venue.slug references (FK to saved venues). Replaces the former single
-      free-text `venue`; multiple venues are allowed.
+      Additional Venue.slug references for the rare case a match spans more than
+      one venue. Usually empty.
   scheduledAt:
     type:
       - string

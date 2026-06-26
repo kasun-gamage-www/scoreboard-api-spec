@@ -26,7 +26,14 @@ properties:
     type:
       - string
       - 'null'
-    description: Free-text venue name, not a FK.
+    description: Primary free-text venue name, not a FK.
+  secondaryVenues:
+    type: array
+    items:
+      type: string
+    description: >-
+      Optional additional free-text venue names for the rare case an event spans
+      more than one venue. Usually empty.
   scheduledAt:
     type:
       - string

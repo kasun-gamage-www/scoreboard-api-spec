@@ -22,6 +22,12 @@ properties:
     type:
       - string
       - 'null'
+    description: Primary free-text venue name.
+  secondaryVenues:
+    type: array
+    items:
+      type: string
+    description: Optional additional free-text venue names for a multi-venue event.
   scheduledAt:
     type:
       - string
