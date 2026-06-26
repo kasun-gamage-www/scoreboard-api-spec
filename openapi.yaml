@@ -2973,9 +2973,9 @@ components:
         - FEATURE
         - INTERVIEW
         - OPINION
-    SportBasic:
+    ArticleSport:
       type: string
-      description: Sports used by Article, Tournament, Video. No GOLF, no OTHER.
+      description: Sports used by Article. Same as SportBasic plus GOLF (no OTHER).
       enum:
         - CRICKET
         - RUGBY
@@ -2987,6 +2987,7 @@ components:
         - NETBALL
         - VOLLEYBALL
         - CYCLING
+        - GOLF
     ArticleStatus:
       type: string
       enum:
@@ -3029,7 +3030,7 @@ components:
         category:
           $ref: '#/components/schemas/ArticleCategory'
         sport:
-          $ref: '#/components/schemas/SportBasic'
+          $ref: '#/components/schemas/ArticleSport'
         status:
           $ref: '#/components/schemas/ArticleStatus'
         summary:
@@ -3072,7 +3073,7 @@ components:
         category:
           $ref: '#/components/schemas/ArticleCategory'
         sport:
-          $ref: '#/components/schemas/SportBasic'
+          $ref: '#/components/schemas/ArticleSport'
         status:
           allOf:
             - $ref: '#/components/schemas/ArticleStatus'
@@ -3405,6 +3406,20 @@ components:
           type:
             - string
             - 'null'
+    SportBasic:
+      type: string
+      description: Sports used by Tournament, Video. No GOLF, no OTHER.
+      enum:
+        - CRICKET
+        - RUGBY
+        - SOCCER
+        - BADMINTON
+        - BOWLING
+        - MOTOR_SPORTS
+        - BASKETBALL
+        - NETBALL
+        - VOLLEYBALL
+        - CYCLING
     TournamentFormat:
       type: string
       enum:

@@ -1,5 +1,5 @@
 type: string
-description: Sports used by Tournament, Video. No GOLF, no OTHER.
+description: Sports used by Article. Same as SportBasic plus GOLF (no OTHER).
 enum:
   - CRICKET
   - RUGBY
@@ -11,3 +11,4 @@ enum:
   - NETBALL
   - VOLLEYBALL
   - CYCLING
+  - GOLF

@@ -22,7 +22,7 @@ properties:
   category:
     $ref: ./ArticleCategory.yaml
   sport:
-    $ref: ./SportBasic.yaml
+    $ref: ./ArticleSport.yaml
   status:
     $ref: ./ArticleStatus.yaml
   summary:

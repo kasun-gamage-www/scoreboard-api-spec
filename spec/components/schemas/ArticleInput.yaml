@@ -17,7 +17,7 @@ properties:
   category:
     $ref: ./ArticleCategory.yaml
   sport:
-    $ref: ./SportBasic.yaml
+    $ref: ./ArticleSport.yaml
   status:
     allOf:
       - $ref: ./ArticleStatus.yaml
