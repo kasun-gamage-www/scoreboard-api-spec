@@ -1,0 +1,26 @@
+type: object
+required:
+  - id
+  - name
+  - slug
+  - createdAt
+  - updatedAt
+properties:
+  id:
+    type: string
+    description: Opaque tag id (Mongo ObjectId).
+  name:
+    type: string
+  slug:
+    type: string
+  description:
+    type:
+      - string
+      - 'null'
+  articleCount:
+    type: integer
+    description: Number of articles referencing this tag (server-derived, read-only).
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

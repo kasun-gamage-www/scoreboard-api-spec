@@ -1,0 +1,70 @@
+parameters:
+  - $ref: ../components/parameters/TagId.yaml
+get:
+  tags:
+    - Tags
+  operationId: tagGet
+  summary: Fetch a tag by id
+  responses:
+    '200':
+      description: The tag.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Tag.yaml
+    '404':
+      $ref: ../components/responses/NotFoundTag.yaml
+put:
+  tags:
+    - Tags
+  operationId: tagUpdate
+  security:
+    - firebaseAuth: []
+  summary: Update a tag
+  description: >-
+    Renaming the slug cascades to articles: existing `Article.tags` references
+    are rewritten to the new slug so usage counts stay correct.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/TagInput.yaml
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Tag.yaml
+    '404':
+      $ref: ../components/responses/NotFoundTag.yaml
+    '409':
+      description: A tag with that name or slug already exists.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: A tag with that name or slug already exists.
+delete:
+  tags:
+    - Tags
+  operationId: tagDelete
+  security:
+    - firebaseAuth: []
+  summary: Delete a tag
+  description: The deleted tag's slug is also pulled from any articles referencing it.
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '204':
+      description: Deleted.
+    '404':
+      $ref: ../components/responses/NotFoundTag.yaml

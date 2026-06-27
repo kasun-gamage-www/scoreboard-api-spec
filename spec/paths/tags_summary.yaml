@@ -1,0 +1,17 @@
+get:
+  tags:
+    - Tags
+  operationId: tagsSummary
+  summary: Compact tag usage summary
+  description: >-
+    One row per tag with its article usage count and the timestamp of the most
+    recently updated referencing article.
+  responses:
+    '200':
+      description: Tag usage summary, sorted by name.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/TagSummary.yaml

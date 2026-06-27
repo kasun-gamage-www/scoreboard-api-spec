@@ -1,0 +1,16 @@
+type: object
+required:
+  - name
+properties:
+  name:
+    type: string
+  slug:
+    type: string
+    description: >-
+      Optional. Lowercase letters, numbers and dashes. Derived from `name` when
+      omitted; normalised and de-duplicated server-side.
+    pattern: '^[a-z0-9-]*$'
+  description:
+    type:
+      - string
+      - 'null'

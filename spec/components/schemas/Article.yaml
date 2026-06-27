@@ -29,6 +29,11 @@ properties:
     type:
       - string
       - 'null'
+  tags:
+    type: array
+    items:
+      type: string
+    description: Slugs referencing Tag documents.
   imageUrl:
     type:
       - string

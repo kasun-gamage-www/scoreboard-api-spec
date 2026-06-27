@@ -147,6 +147,8 @@ tags:
     description: S3 presign / delete contract and per-resource upload aliases.
   - name: Articles
     description: Editorial articles (news, match reports, features).
+  - name: Tags
+    description: Editorial tags (id-addressed) with article usage counts.
   - name: Clubs
     description: Sporting clubs.
   - name: Players
@@ -228,6 +230,12 @@ paths:
     $ref: paths/articles_popular.yaml
   /articles/{slug}:
     $ref: paths/articles_{slug}.yaml
+  /tags:
+    $ref: paths/tags.yaml
+  /tags/summary:
+    $ref: paths/tags_summary.yaml
+  /tags/{id}:
+    $ref: paths/tags_{id}.yaml
   /clubs:
     $ref: paths/clubs.yaml
   /clubs/{slug}:

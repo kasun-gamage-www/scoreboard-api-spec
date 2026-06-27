@@ -1,0 +1,46 @@
+get:
+  tags:
+    - Tags
+  operationId: tagsList
+  summary: List tags (each annotated with article usage count)
+  responses:
+    '200':
+      description: All tags, sorted by name.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Tag.yaml
+post:
+  tags:
+    - Tags
+  operationId: tagCreate
+  security:
+    - firebaseAuth: []
+  summary: Create a tag
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/TagInput.yaml
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Tag.yaml
+    '409':
+      description: A tag with that name or slug already exists.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: A tag with that name or slug already exists.

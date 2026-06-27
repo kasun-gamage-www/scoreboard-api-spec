@@ -1,0 +1,20 @@
+type: object
+required:
+  - id
+  - name
+  - slug
+  - articleCount
+properties:
+  id:
+    type: string
+  name:
+    type: string
+  slug:
+    type: string
+  articleCount:
+    type: integer
+  lastUsedAt:
+    oneOf:
+      - $ref: ./Timestamp.yaml
+      - type: 'null'
+    description: When the most recently updated referencing article was last touched.
