@@ -30,7 +30,19 @@ properties:
     type: array
     items:
       type: string
-    description: Slugs referencing Tag documents.
+    description: >-
+      A flat list mixing **plain tags** (slugs referencing Tag documents) with
+      **smart tags** — namespaced `<type>:<slug>` entity associations. Recognised
+      types are `match`, `tournament`, `player`, `team`, `club` and `venue`, and
+      the slug is the target record's slug (e.g. `tournament:champions-trophy`).
+      See the `Article` schema for the full convention. Both kinds are stored
+      verbatim in the same array; the server does not validate that referenced
+      records exist.
+    example:
+      - season-opener
+      - tournament:champions-trophy
+      - match:india-vs-australia-2026
+      - player:virat-kohli
   imageUrl:
     type:
       - string

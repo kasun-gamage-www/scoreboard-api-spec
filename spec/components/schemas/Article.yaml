@@ -33,7 +33,28 @@ properties:
     type: array
     items:
       type: string
-    description: Slugs referencing Tag documents.
+    description: >-
+      A flat list that carries two kinds of entry:
+
+      * **Plain tags** — slugs referencing Tag documents (e.g. `season-opener`).
+
+      * **Smart tags (entity associations)** — namespaced `<type>:<slug>` entries
+        that associate the article with another DB record. Recognised types are
+        `match`, `tournament`, `player`, `team`, `club` and `venue`; the slug is
+        the target record's own slug (e.g. `tournament:champions-trophy`,
+        `match:india-vs-australia-2026`). An article may carry any number of
+        associations, of any mix of types.
+
+      Both kinds live in the same indexed string array, so associations are
+      directly queryable (e.g. `{ tags: 'tournament:champions-trophy' }`).
+      Because tag slugs are normalised to `[a-z0-9-]`, a plain tag can never
+      collide with a `<type>:` prefix, and `/tags` + `/tags/summary` ignore the
+      namespaced entries (they only count slugs that resolve to a Tag document).
+    example:
+      - season-opener
+      - tournament:champions-trophy
+      - match:india-vs-australia-2026
+      - player:virat-kohli
   imageUrl:
     type:
       - string
