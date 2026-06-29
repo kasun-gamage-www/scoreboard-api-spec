@@ -23,7 +23,10 @@ properties:
     type:
       - string
       - 'null'
-    description: Free-text team name, not a Team.slug FK.
+    description: >-
+      Team name (stored as free text, not a Team.slug FK). The admin UI offers
+      selection from saved teams — or inline creation of a new one — but persists
+      the chosen team's name, and arbitrary free text is still accepted.
   position:
     type:
       - string

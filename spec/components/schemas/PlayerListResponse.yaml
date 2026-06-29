@@ -1,0 +1,24 @@
+type: object
+description: >-
+  Paged players envelope, returned by `GET /players` when any of `limit`,
+  `offset` or `page` is supplied. Without those params the endpoint returns a
+  bare `Player[]` array (legacy shape) instead.
+required:
+  - limit
+  - offset
+  - total
+  - items
+properties:
+  limit:
+    type: integer
+    example: 25
+  offset:
+    type: integer
+    example: 0
+  total:
+    type: integer
+    description: Total players matching the filters/search, ignoring limit/offset.
+  items:
+    type: array
+    items:
+      $ref: ./Player.yaml

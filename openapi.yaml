@@ -943,18 +943,84 @@ paths:
       tags:
         - Players
       operationId: playersList
-      summary: List players (optional name search)
+      summary: List players (search, filter, sort, optional pagination)
+      description: Returns a bare `Player[]` array by default. When any of `limit`, `offset` or `page` is supplied the response switches to a paged envelope (`PlayerListResponse`) carrying the matching `total`. `search`, `sport`, `team` and `sortField`/`sortOrder` apply to both shapes.
       parameters:
-        - $ref: '#/components/parameters/Search'
+        - name: search
+          in: query
+          required: false
+          description: Case-insensitive substring matched across `name`, `team`, `position` and `country`.
+          schema:
+            type: string
+        - name: sport
+          in: query
+          required: false
+          description: Exact-match filter on `sport`.
+          schema:
+            $ref: '#/components/schemas/SportWithOther'
+        - name: team
+          in: query
+          required: false
+          description: Exact-match filter on the player's (free-text) `team` name.
+          schema:
+            type: string
+        - name: sortField
+          in: query
+          required: false
+          description: Field to sort by. One of `name`, `sport`, `team`, `position`, `status`, `createdAt`; any other value falls back to the default `createdAt` sort.
+          schema:
+            type: string
+            enum:
+              - name
+              - sport
+              - team
+              - position
+              - status
+              - createdAt
+        - name: sortOrder
+          in: query
+          required: false
+          description: '`1`/`asc` ascending (default), `-1`/`desc` descending.'
+          schema:
+            type: integer
+            enum:
+              - 1
+              - -1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          description: Page size. Presence of this (or `offset`/`page`) enables the paged envelope.
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: page
+          in: query
+          required: false
+          description: 1-based page number; an alternative to `offset` (offset = (page - 1) * limit).
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '200':
-          description: Players (filtered by `search` when provided).
+          description: Players matching the search/filters. A bare array by default, or a `PlayerListResponse` envelope when paginated.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Player'
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/Player'
+                  - $ref: '#/components/schemas/PlayerListResponse'
     post:
       tags:
         - Players
@@ -3671,7 +3737,7 @@ components:
           type:
             - string
             - 'null'
-          description: Free-text team name, not a Team.slug FK.
+          description: Team name (stored as free text, not a Team.slug FK). The admin UI offers selection from saved teams — or inline creation of a new one — but persists the chosen team's name, and arbitrary free text is still accepted.
         position:
           type:
             - string
@@ -3694,6 +3760,28 @@ components:
           $ref: '#/components/schemas/Timestamp'
         updatedAt:
           $ref: '#/components/schemas/Timestamp'
+    PlayerListResponse:
+      type: object
+      description: Paged players envelope, returned by `GET /players` when any of `limit`, `offset` or `page` is supplied. Without those params the endpoint returns a bare `Player[]` array (legacy shape) instead.
+      required:
+        - limit
+        - offset
+        - total
+        - items
+      properties:
+        limit:
+          type: integer
+          example: 25
+        offset:
+          type: integer
+          example: 0
+        total:
+          type: integer
+          description: Total players matching the filters/search, ignoring limit/offset.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Player'
     PlayerInput:
       type: object
       required:
@@ -3717,6 +3805,7 @@ components:
           type:
             - string
             - 'null'
+          description: Team name (free text, not a Team.slug FK). The admin UI sources this from saved teams with inline create, but any string is accepted.
         position:
           type:
             - string

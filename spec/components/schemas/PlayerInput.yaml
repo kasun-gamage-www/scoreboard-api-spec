@@ -20,6 +20,9 @@ properties:
     type:
       - string
       - 'null'
+    description: >-
+      Team name (free text, not a Team.slug FK). The admin UI sources this from
+      saved teams with inline create, but any string is accepted.
   position:
     type:
       - string
