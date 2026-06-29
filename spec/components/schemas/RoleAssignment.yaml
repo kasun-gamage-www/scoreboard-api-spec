@@ -1,0 +1,38 @@
+type: object
+description: >-
+  An operational role granted to a user, optionally scoped to a specific record.
+  A user may hold many assignments (multiple roles, and/or the same role scoped
+  to several records).
+required:
+  - id
+  - uid
+  - role
+  - createdAt
+  - updatedAt
+properties:
+  id:
+    type: string
+    description: Assignment id.
+  uid:
+    type: string
+    description: Firebase UID of the user the role is granted to.
+  role:
+    $ref: ./Role.yaml
+  scopeType:
+    $ref: ./RoleScopeType.yaml
+  scopeSlug:
+    type:
+      - string
+      - 'null'
+    description: >-
+      Slug of the scoped record (a Venue/Club/Team/Tournament/Player). `null`
+      for global roles.
+  createdBy:
+    type:
+      - string
+      - 'null'
+    description: Firebase UID of the admin who created the assignment.
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

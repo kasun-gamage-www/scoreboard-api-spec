@@ -16,4 +16,12 @@ properties:
   admin:
     type: boolean
     default: false
-    description: When true, the new account is granted the `admin` custom claim.
+    description: >-
+      When true, the new account is granted the `admin` custom claim. Granting a
+      global tier requires the caller to be a super-admin.
+  superAdmin:
+    type: boolean
+    default: false
+    description: >-
+      When true, the new account is granted the `superAdmin` claim (and `admin`
+      alongside it). Super-admin only.

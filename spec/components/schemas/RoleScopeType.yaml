@@ -1,0 +1,15 @@
+type:
+  - string
+  - 'null'
+description: >-
+  The kind of record a scoped role attaches to. `null` for global roles. The
+  scope's `scopeSlug` references that record's `slug`. `EVENT_MANAGER` scopes to
+  a `TOURNAMENT`; authority over that tournament's matches is derived at
+  enforcement time, not stored as additional assignments.
+enum:
+  - VENUE
+  - CLUB
+  - TEAM
+  - TOURNAMENT
+  - PLAYER
+  - null

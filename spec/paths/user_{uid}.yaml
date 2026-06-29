@@ -11,12 +11,14 @@ put:
   operationId: userSetAdmin
   security:
     - firebaseAuth: []
-  summary: Grant or revoke admin
+  summary: Set a user's global tier (admin / super-admin)
   description: >-
-    Admin-only. Sets or clears the `admin` custom claim on an existing user and
-    revokes their refresh tokens so the change takes effect on their next
-    request. An admin cannot revoke their own privileges (guards against locking
-    the team out). Reachable with and without the `/api` prefix.
+    Super-admin only. Sets or clears the `admin` / `superAdmin` custom claims on
+    an existing user and revokes their refresh tokens so the change takes effect
+    on their next request. Promoting to a global tier clears the user's
+    operational role assignments. A super-admin cannot strip their own
+    privileges (guards against locking the team out). Reachable with and without
+    the `/api` prefix.
   requestBody:
     required: true
     content:

@@ -1,0 +1,77 @@
+parameters:
+  - name: uid
+    in: path
+    required: true
+    description: Firebase UID of the target user.
+    schema:
+      type: string
+get:
+  tags:
+    - Roles
+  operationId: userRolesList
+  security:
+    - firebaseAuth: []
+  summary: List a user's role assignments
+  description: Admin-only. Lists the operational role assignments granted to the user.
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '200':
+      description: The user's role assignments.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/RoleAssignment.yaml
+post:
+  tags:
+    - Roles
+  operationId: userRoleAssign
+  security:
+    - firebaseAuth: []
+  summary: Assign a role to a user
+  description: >-
+    Admin-only (admins and super-admins). Grants an operational role, optionally
+    scoped to a specific record. Global roles must omit the scope fields; scoped
+    roles require an existing record for `scopeSlug`. Global-tier accounts
+    (admin/super-admin) cannot hold operational roles.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/RoleAssignmentInput.yaml
+  responses:
+    '400':
+      description: >-
+        Invalid role, scope mismatch (global role with a scope, or scoped role
+        without/with an unknown record), or the target is a global-tier admin.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: VENUE_MANAGER requires a venue (scopeSlug)
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../components/responses/NotFoundUser.yaml
+    '409':
+      description: The same role+scope is already assigned to this user.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: This role is already assigned
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/RoleAssignment.yaml

@@ -82,6 +82,8 @@ tags:
     description: S3 presign / delete contract and per-resource upload aliases.
   - name: Articles
     description: Editorial articles (news, match reports, features).
+  - name: Tags
+    description: Editorial tags (id-addressed) with article usage counts.
   - name: Clubs
     description: Sporting clubs.
   - name: Players
@@ -121,7 +123,9 @@ tags:
   - name: Soccer Legacy
     description: Deprecated `/api/soccer-scores` routes. Do not build new code against these.
   - name: Users
-    description: Admin user management — list, create, and grant/revoke admin.
+    description: Admin user management — list, create, and set global tier (admin/super-admin).
+  - name: Roles
+    description: Operational role assignments for admin-panel users (optionally scoped to a record).
   - name: System
     description: Operational endpoints (unauthenticated health probe).
 paths:
@@ -217,8 +221,8 @@ paths:
       operationId: userSetAdmin
       security:
         - firebaseAuth: []
-      summary: Grant or revoke admin
-      description: Admin-only. Sets or clears the `admin` custom claim on an existing user and revokes their refresh tokens so the change takes effect on their next request. An admin cannot revoke their own privileges (guards against locking the team out). Reachable with and without the `/api` prefix.
+      summary: Set a user's global tier (admin / super-admin)
+      description: Super-admin only. Sets or clears the `admin` / `superAdmin` custom claims on an existing user and revokes their refresh tokens so the change takes effect on their next request. Promoting to a global tier clears the user's operational role assignments. A super-admin cannot strip their own privileges (guards against locking the team out). Reachable with and without the `/api` prefix.
       requestBody:
         required: true
         content:
@@ -246,6 +250,109 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundUser'
+  /user/{uid}/roles:
+    parameters:
+      - name: uid
+        in: path
+        required: true
+        description: Firebase UID of the target user.
+        schema:
+          type: string
+    get:
+      tags:
+        - Roles
+      operationId: userRolesList
+      security:
+        - firebaseAuth: []
+      summary: List a user's role assignments
+      description: Admin-only. Lists the operational role assignments granted to the user.
+      responses:
+        '200':
+          description: The user's role assignments.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleAssignment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+        - Roles
+      operationId: userRoleAssign
+      security:
+        - firebaseAuth: []
+      summary: Assign a role to a user
+      description: Admin-only (admins and super-admins). Grants an operational role, optionally scoped to a specific record. Global roles must omit the scope fields; scoped roles require an existing record for `scopeSlug`. Global-tier accounts (admin/super-admin) cannot hold operational roles.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleAssignmentInput'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignment'
+        '400':
+          description: Invalid role, scope mismatch (global role with a scope, or scoped role without/with an unknown record), or the target is a global-tier admin.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: VENUE_MANAGER requires a venue (scopeSlug)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFoundUser'
+        '409':
+          description: The same role+scope is already assigned to this user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: This role is already assigned
+  /user/{uid}/roles/{id}:
+    parameters:
+      - name: uid
+        in: path
+        required: true
+        description: Firebase UID of the target user.
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        description: Role assignment id.
+        schema:
+          type: string
+    delete:
+      tags:
+        - Roles
+      operationId: userRoleRemove
+      security:
+        - firebaseAuth: []
+      summary: Remove a role assignment
+      description: Admin-only. Removes a single operational role assignment from the user.
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFoundRoleAssignment'
   /media/presign:
     post:
       tags:
@@ -603,6 +710,138 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /tags:
+    get:
+      tags:
+        - Tags
+      operationId: tagsList
+      summary: List tags (each annotated with article usage count)
+      responses:
+        '200':
+          description: All tags, sorted by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+    post:
+      tags:
+        - Tags
+      operationId: tagCreate
+      security:
+        - firebaseAuth: []
+      summary: Create a tag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagInput'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: A tag with that name or slug already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: A tag with that name or slug already exists.
+  /tags/summary:
+    get:
+      tags:
+        - Tags
+      operationId: tagsSummary
+      summary: Compact tag usage summary
+      description: One row per tag with its article usage count and the timestamp of the most recently updated referencing article.
+      responses:
+        '200':
+          description: Tag usage summary, sorted by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagSummary'
+  /tags/{id}:
+    parameters:
+      - $ref: '#/components/parameters/TagId'
+    get:
+      tags:
+        - Tags
+      operationId: tagGet
+      summary: Fetch a tag by id
+      responses:
+        '200':
+          description: The tag.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '404':
+          $ref: '#/components/responses/NotFoundTag'
+    put:
+      tags:
+        - Tags
+      operationId: tagUpdate
+      security:
+        - firebaseAuth: []
+      summary: Update a tag
+      description: 'Renaming the slug cascades to articles: existing `Article.tags` references are rewritten to the new slug so usage counts stay correct.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagInput'
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFoundTag'
+        '409':
+          description: A tag with that name or slug already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: A tag with that name or slug already exists.
+    delete:
+      tags:
+        - Tags
+      operationId: tagDelete
+      security:
+        - firebaseAuth: []
+      summary: Delete a tag
+      description: The deleted tag's slug is also pulled from any articles referencing it.
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFoundTag'
   /clubs:
     get:
       tags:
@@ -2819,7 +3058,11 @@ components:
         priv:
           type: string
           default: USER
-          description: Privilege / role marker (`USER` or `ADMIN`), derived from the Firebase `admin` custom claim. Mutating endpoints require `ADMIN`.
+          enum:
+            - USER
+            - ADMIN
+            - SUPER_ADMIN
+          description: 'Global privilege tier, derived from the Firebase custom claims: `SUPER_ADMIN` (`superAdmin` claim), `ADMIN` (`admin` claim), else `USER`. Mutating endpoints require at least `ADMIN`; granting/revoking these tiers requires `SUPER_ADMIN`. Operational roles are separate — see `GET /user/{uid}/roles`.'
         createdAt:
           $ref: '#/components/schemas/Timestamp'
           description: Firebase account creation time.
@@ -2854,16 +3097,100 @@ components:
         admin:
           type: boolean
           default: false
-          description: When true, the new account is granted the `admin` custom claim.
+          description: When true, the new account is granted the `admin` custom claim. Granting a global tier requires the caller to be a super-admin.
+        superAdmin:
+          type: boolean
+          default: false
+          description: When true, the new account is granted the `superAdmin` claim (and `admin` alongside it). Super-admin only.
     UserAdminInput:
       type: object
-      description: Payload for granting/revoking admin on a user (PUT /user/{uid}).
-      required:
-        - admin
+      description: Payload for setting the global tier on a user (PUT /user/{uid}). Super-admin only. Send `admin` and/or `superAdmin`; at least one is required. Promoting to a global tier clears the user's operational role assignments.
+      anyOf:
+        - required:
+            - admin
+        - required:
+            - superAdmin
       properties:
         admin:
           type: boolean
-          description: '`true` grants the `admin` custom claim; `false` clears it. Either way the target''s refresh tokens are revoked so the change applies on their next request.'
+          description: '`true` grants the `admin` custom claim; `false` clears it (when `superAdmin` is not granted). Refresh tokens are revoked either way.'
+        superAdmin:
+          type: boolean
+          description: '`true` grants the `superAdmin` claim (and `admin` alongside it); `false` clears it.'
+    Role:
+      type: string
+      description: Operational admin-panel role assignable to a user. The global tiers `ADMIN` and `SUPER_ADMIN` are NOT part of this enum — they are Firebase custom claims managed via `PUT /user/{uid}`, and an account is either a global-tier admin or a holder of these operational roles (never both).
+      enum:
+        - EDITOR
+        - WRITER_REPORTER
+        - REVIEWER
+        - SCORER
+        - VENUE_MANAGER
+        - CLUB_MANAGER
+        - TEAM_MANAGER
+        - EVENT_MANAGER
+        - PLAYER
+    RoleScopeType:
+      type:
+        - string
+        - 'null'
+      description: The kind of record a scoped role attaches to. `null` for global roles. The scope's `scopeSlug` references that record's `slug`. `EVENT_MANAGER` scopes to a `TOURNAMENT`; authority over that tournament's matches is derived at enforcement time, not stored as additional assignments.
+      enum:
+        - VENUE
+        - CLUB
+        - TEAM
+        - TOURNAMENT
+        - PLAYER
+        - null
+    RoleAssignment:
+      type: object
+      description: An operational role granted to a user, optionally scoped to a specific record. A user may hold many assignments (multiple roles, and/or the same role scoped to several records).
+      required:
+        - id
+        - uid
+        - role
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: Assignment id.
+        uid:
+          type: string
+          description: Firebase UID of the user the role is granted to.
+        role:
+          $ref: '#/components/schemas/Role'
+        scopeType:
+          $ref: '#/components/schemas/RoleScopeType'
+        scopeSlug:
+          type:
+            - string
+            - 'null'
+          description: Slug of the scoped record (a Venue/Club/Team/Tournament/Player). `null` for global roles.
+        createdBy:
+          type:
+            - string
+            - 'null'
+          description: Firebase UID of the admin who created the assignment.
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+    RoleAssignmentInput:
+      type: object
+      description: Payload to assign an operational role (POST /user/{uid}/roles). Global roles must omit the scope fields; scoped roles require `scopeSlug` referencing an existing record of the role's scope type (`scopeType` is optional and inferred from the role when omitted).
+      required:
+        - role
+      properties:
+        role:
+          $ref: '#/components/schemas/Role'
+        scopeType:
+          $ref: '#/components/schemas/RoleScopeType'
+        scopeSlug:
+          type:
+            - string
+            - 'null'
+          description: Slug of the scoped record. Required for scoped roles.
     MediaFolder:
       type: string
       enum:
@@ -3039,6 +3366,11 @@ components:
           type:
             - string
             - 'null'
+        tags:
+          type: array
+          items:
+            type: string
+          description: Slugs referencing Tag documents.
         imageUrl:
           type:
             - string
@@ -3084,6 +3416,11 @@ components:
           type:
             - string
             - 'null'
+        tags:
+          type: array
+          items:
+            type: string
+          description: Slugs referencing Tag documents.
         imageUrl:
           type:
             - string
@@ -3097,6 +3434,69 @@ components:
             - number
             - 'null'
           description: Required when imageYAlignment is `custom`; MUST be null otherwise.
+    Tag:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: Opaque tag id (Mongo ObjectId).
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type:
+            - string
+            - 'null'
+        articleCount:
+          type: integer
+          description: Number of articles referencing this tag (server-derived, read-only).
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+    TagInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+          description: Optional. Lowercase letters, numbers and dashes. Derived from `name` when omitted; normalised and de-duplicated server-side.
+          pattern: ^[a-z0-9-]*$
+        description:
+          type:
+            - string
+            - 'null'
+    TagSummary:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - articleCount
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        articleCount:
+          type: integer
+        lastUsedAt:
+          oneOf:
+            - $ref: '#/components/schemas/Timestamp'
+            - type: 'null'
+          description: When the most recently updated referencing article was last touched.
     ClubType:
       type: string
       enum:
@@ -7649,6 +8049,14 @@ components:
             $ref: '#/components/schemas/Error'
           example:
             error: There is no user record corresponding to the provided identifier.
+    NotFoundRoleAssignment:
+      description: No role assignment exists for the supplied id.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Role assignment not found
     Presign:
       description: Presigned upload details (folder fixed by the alias).
       content:
@@ -7663,6 +8071,14 @@ components:
             $ref: '#/components/schemas/Error'
           example:
             error: Article not found
+    NotFoundTag:
+      description: Tag not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Tag not found
     NotFoundClub:
       description: Club not found.
       content:
@@ -7764,6 +8180,13 @@ components:
       in: path
       required: true
       description: Backend-generated URL-friendly identifier.
+      schema:
+        type: string
+    TagId:
+      name: id
+      in: path
+      required: true
+      description: Opaque tag id (Mongo ObjectId).
       schema:
         type: string
     Search:

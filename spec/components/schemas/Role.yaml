@@ -1,0 +1,16 @@
+type: string
+description: >-
+  Operational admin-panel role assignable to a user. The global tiers `ADMIN`
+  and `SUPER_ADMIN` are NOT part of this enum — they are Firebase custom claims
+  managed via `PUT /user/{uid}`, and an account is either a global-tier admin or
+  a holder of these operational roles (never both).
+enum:
+  - EDITOR
+  - WRITER_REPORTER
+  - REVIEWER
+  - SCORER
+  - VENUE_MANAGER
+  - CLUB_MANAGER
+  - TEAM_MANAGER
+  - EVENT_MANAGER
+  - PLAYER

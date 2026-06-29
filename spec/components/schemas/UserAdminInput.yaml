@@ -1,11 +1,19 @@
 type: object
-description: Payload for granting/revoking admin on a user (PUT /user/{uid}).
-required:
-  - admin
+description: >-
+  Payload for setting the global tier on a user (PUT /user/{uid}). Super-admin
+  only. Send `admin` and/or `superAdmin`; at least one is required. Promoting to
+  a global tier clears the user's operational role assignments.
+anyOf:
+  - required: [admin]
+  - required: [superAdmin]
 properties:
   admin:
     type: boolean
     description: >-
-      `true` grants the `admin` custom claim; `false` clears it. Either way the
-      target's refresh tokens are revoked so the change applies on their next
-      request.
+      `true` grants the `admin` custom claim; `false` clears it (when
+      `superAdmin` is not granted). Refresh tokens are revoked either way.
+  superAdmin:
+    type: boolean
+    description: >-
+      `true` grants the `superAdmin` claim (and `admin` alongside it); `false`
+      clears it.

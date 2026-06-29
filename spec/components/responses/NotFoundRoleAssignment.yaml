@@ -1,0 +1,7 @@
+description: No role assignment exists for the supplied id.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/Error.yaml
+    example:
+      error: Role assignment not found

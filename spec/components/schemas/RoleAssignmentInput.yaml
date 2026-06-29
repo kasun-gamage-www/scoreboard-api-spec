@@ -1,0 +1,18 @@
+type: object
+description: >-
+  Payload to assign an operational role (POST /user/{uid}/roles). Global roles
+  must omit the scope fields; scoped roles require `scopeSlug` referencing an
+  existing record of the role's scope type (`scopeType` is optional and inferred
+  from the role when omitted).
+required:
+  - role
+properties:
+  role:
+    $ref: ./Role.yaml
+  scopeType:
+    $ref: ./RoleScopeType.yaml
+  scopeSlug:
+    type:
+      - string
+      - 'null'
+    description: Slug of the scoped record. Required for scoped roles.

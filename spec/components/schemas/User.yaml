@@ -15,9 +15,16 @@ properties:
   priv:
     type: string
     default: USER
+    enum:
+      - USER
+      - ADMIN
+      - SUPER_ADMIN
     description: >-
-      Privilege / role marker (`USER` or `ADMIN`), derived from the Firebase
-      `admin` custom claim. Mutating endpoints require `ADMIN`.
+      Global privilege tier, derived from the Firebase custom claims:
+      `SUPER_ADMIN` (`superAdmin` claim), `ADMIN` (`admin` claim), else `USER`.
+      Mutating endpoints require at least `ADMIN`; granting/revoking these tiers
+      requires `SUPER_ADMIN`. Operational roles are separate — see
+      `GET /user/{uid}/roles`.
   createdAt:
     $ref: ./Timestamp.yaml
     description: Firebase account creation time.

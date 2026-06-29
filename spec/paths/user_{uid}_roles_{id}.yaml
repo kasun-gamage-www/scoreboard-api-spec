@@ -1,0 +1,30 @@
+parameters:
+  - name: uid
+    in: path
+    required: true
+    description: Firebase UID of the target user.
+    schema:
+      type: string
+  - name: id
+    in: path
+    required: true
+    description: Role assignment id.
+    schema:
+      type: string
+delete:
+  tags:
+    - Roles
+  operationId: userRoleRemove
+  security:
+    - firebaseAuth: []
+  summary: Remove a role assignment
+  description: Admin-only. Removes a single operational role assignment from the user.
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../components/responses/NotFoundRoleAssignment.yaml
+    '204':
+      description: Deleted.

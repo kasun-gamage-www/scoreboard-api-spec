@@ -192,7 +192,9 @@ tags:
       Deprecated `/api/soccer-scores` routes. Do not build new code against
       these.
   - name: Users
-    description: Admin user management — list, create, and grant/revoke admin.
+    description: Admin user management — list, create, and set global tier (admin/super-admin).
+  - name: Roles
+    description: Operational role assignments for admin-panel users (optionally scoped to a record).
   - name: System
     description: Operational endpoints (unauthenticated health probe).
 paths:
@@ -202,6 +204,10 @@ paths:
     $ref: paths/user.yaml
   /user/{uid}:
     $ref: paths/user_{uid}.yaml
+  /user/{uid}/roles:
+    $ref: paths/user_{uid}_roles.yaml
+  /user/{uid}/roles/{id}:
+    $ref: paths/user_{uid}_roles_{id}.yaml
   /media/presign:
     $ref: paths/media_presign.yaml
   /media:
