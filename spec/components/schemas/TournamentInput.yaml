@@ -7,6 +7,15 @@ required:
 properties:
   name:
     type: string
+  slug:
+    type: string
+    description: >-
+      Optional, editable public identifier. When omitted or blank the slug is
+      derived from `name` (always so on create). Any value supplied is
+      normalised server-side to `[a-z0-9-]` and made unique. On update, changing
+      the slug cascades to every reference: the `tournament:<slug>` smart tags in
+      article `tags[]` and the `tournamentSlug` FK on matches/other-events are
+      rewritten to the new slug.
   sport:
     $ref: ./SportBasic.yaml
   format:

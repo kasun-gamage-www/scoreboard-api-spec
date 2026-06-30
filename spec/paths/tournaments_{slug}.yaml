@@ -21,6 +21,11 @@ put:
   security:
     - firebaseAuth: []
   summary: Full replacement of a tournament
+  description: >-
+    Send a `slug` in the body to rename the tournament's public identifier; it
+    is normalised and made unique, and the change cascades to all references
+    (`tournament:<slug>` smart tags in article `tags[]` and the `tournamentSlug`
+    FK on matches/other-events). Omit `slug` to leave it tracking `name`.
   requestBody:
     required: true
     content:

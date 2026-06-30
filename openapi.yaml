@@ -1264,6 +1264,7 @@ paths:
       security:
         - firebaseAuth: []
       summary: Full replacement of a tournament
+      description: Send a `slug` in the body to rename the tournament's public identifier; it is normalised and made unique, and the change cascades to all references (`tournament:<slug>` smart tags in article `tags[]` and the `tournamentSlug` FK on matches/other-events). Omit `slug` to leave it tracking `name`.
       requestBody:
         required: true
         content:
@@ -4020,6 +4021,9 @@ components:
       properties:
         name:
           type: string
+        slug:
+          type: string
+          description: 'Optional, editable public identifier. When omitted or blank the slug is derived from `name` (always so on create). Any value supplied is normalised server-side to `[a-z0-9-]` and made unique. On update, changing the slug cascades to every reference: the `tournament:<slug>` smart tags in article `tags[]` and the `tournamentSlug` FK on matches/other-events are rewritten to the new slug.'
         sport:
           $ref: '#/components/schemas/SportBasic'
         format:
