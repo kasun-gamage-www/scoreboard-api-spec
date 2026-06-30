@@ -1,0 +1,56 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Practice
+  operationId: practiceGet
+  summary: Fetch a practice facility by slug
+  responses:
+    '200':
+      description: The practice facility.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PracticeFacility.yaml
+    '404':
+      $ref: ../components/responses/NotFoundPractice.yaml
+put:
+  tags:
+    - Practice
+  operationId: practiceReplace
+  security:
+    - firebaseAuth: []
+  summary: Full replacement of a practice facility
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/PracticeFacilityInput.yaml
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PracticeFacility.yaml
+    '404':
+      $ref: ../components/responses/NotFoundPractice.yaml
+delete:
+  tags:
+    - Practice
+  operationId: practiceDelete
+  security:
+    - firebaseAuth: []
+  summary: Delete a practice facility
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '204':
+      description: Deleted.

@@ -1,0 +1,7 @@
+type: string
+description: Kind of sports shop.
+enum:
+  - RETAIL
+  - ONLINE
+  - RENTAL
+  - SERVICE

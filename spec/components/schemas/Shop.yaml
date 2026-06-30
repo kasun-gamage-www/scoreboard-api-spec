@@ -1,0 +1,60 @@
+type: object
+description: A sports retailer / pro-shop, scoped to a primary sport.
+required:
+  - slug
+  - name
+  - type
+  - primarySport
+  - status
+  - createdAt
+  - updatedAt
+properties:
+  slug:
+    type: string
+  name:
+    type: string
+  type:
+    $ref: ./ShopType.yaml
+  primarySport:
+    $ref: ./SportWithOther.yaml
+  status:
+    $ref: ./ShopStatus.yaml
+  description:
+    type:
+      - string
+      - 'null'
+  address:
+    type:
+      - string
+      - 'null'
+  emirate:
+    $ref: ./Emirate.yaml
+  city:
+    type:
+      - string
+      - 'null'
+  country:
+    type:
+      - string
+      - 'null'
+  website:
+    type:
+      - string
+      - 'null'
+  email:
+    type:
+      - string
+      - 'null'
+  phone:
+    type:
+      - string
+      - 'null'
+  imageUrl:
+    type:
+      - string
+      - 'null'
+    description: Public URL from /shops/upload.
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

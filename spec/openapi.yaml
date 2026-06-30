@@ -159,6 +159,10 @@ tags:
     description: Tournaments / competitions. Source of cricket-format inheritance.
   - name: Venues
     description: Venues (UAE-aware via the `emirate` enum).
+  - name: Shops
+    description: Sports retailers / pro-shops, scoped to a primary sport.
+  - name: Practice
+    description: Bookable practice facilities and coaching, scoped to a primary sport.
   - name: Photos
     description: Public photo gallery entries.
   - name: Videos
@@ -228,6 +232,10 @@ paths:
     $ref: paths/tournaments_upload.yaml
   /venues/upload:
     $ref: paths/venues_upload.yaml
+  /shops/upload:
+    $ref: paths/shops_upload.yaml
+  /practice/upload:
+    $ref: paths/practice_upload.yaml
   /videos/upload:
     $ref: paths/videos_upload.yaml
   /articles:
@@ -262,6 +270,14 @@ paths:
     $ref: paths/venues.yaml
   /venues/{slug}:
     $ref: paths/venues_{slug}.yaml
+  /shops:
+    $ref: paths/shops.yaml
+  /shops/{slug}:
+    $ref: paths/shops_{slug}.yaml
+  /practice:
+    $ref: paths/practice.yaml
+  /practice/{slug}:
+    $ref: paths/practice_{slug}.yaml
   /photos:
     $ref: paths/photos.yaml
   /photos/{slug}:

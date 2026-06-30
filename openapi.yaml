@@ -94,6 +94,10 @@ tags:
     description: Tournaments / competitions. Source of cricket-format inheritance.
   - name: Venues
     description: Venues (UAE-aware via the `emirate` enum).
+  - name: Shops
+    description: Sports retailers / pro-shops, scoped to a primary sport.
+  - name: Practice
+    description: Bookable practice facilities and coaching, scoped to a primary sport.
   - name: Photos
     description: Public photo gallery entries.
   - name: Videos
@@ -551,6 +555,40 @@ paths:
         - Media
       operationId: venuesUpload
       summary: Presign alias (folder hard-coded to `venues`)
+      security:
+        - firebaseAuth: []
+      requestBody:
+        $ref: '#/components/requestBodies/PresignAlias'
+      responses:
+        '200':
+          $ref: '#/components/responses/Presign'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /shops/upload:
+    post:
+      tags:
+        - Media
+      operationId: shopsUpload
+      summary: Presign alias (folder hard-coded to `shops`)
+      security:
+        - firebaseAuth: []
+      requestBody:
+        $ref: '#/components/requestBodies/PresignAlias'
+      responses:
+        '200':
+          $ref: '#/components/responses/Presign'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /practice/upload:
+    post:
+      tags:
+        - Media
+      operationId: practiceUpload
+      summary: Presign alias (folder hard-coded to `practice`)
       security:
         - firebaseAuth: []
       requestBody:
@@ -1390,6 +1428,204 @@ paths:
       security:
         - firebaseAuth: []
       summary: Delete a venue
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /shops:
+    get:
+      tags:
+        - Shops
+      operationId: shopsList
+      summary: List shops (optional sport / name filters)
+      parameters:
+        - $ref: '#/components/parameters/SportFilter'
+        - $ref: '#/components/parameters/Search'
+      responses:
+        '200':
+          description: Shops (filtered by `sport` / `search` when provided).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Shop'
+    post:
+      tags:
+        - Shops
+      operationId: shopCreate
+      security:
+        - firebaseAuth: []
+      summary: Create a shop
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShopInput'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shop'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /shops/{slug}:
+    parameters:
+      - $ref: '#/components/parameters/Slug'
+    get:
+      tags:
+        - Shops
+      operationId: shopGet
+      summary: Fetch a shop by slug
+      responses:
+        '200':
+          description: The shop.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shop'
+        '404':
+          $ref: '#/components/responses/NotFoundShop'
+    put:
+      tags:
+        - Shops
+      operationId: shopReplace
+      security:
+        - firebaseAuth: []
+      summary: Full replacement of a shop
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShopInput'
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shop'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFoundShop'
+    delete:
+      tags:
+        - Shops
+      operationId: shopDelete
+      security:
+        - firebaseAuth: []
+      summary: Delete a shop
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /practice:
+    get:
+      tags:
+        - Practice
+      operationId: practiceList
+      summary: List practice facilities (optional sport / name filters)
+      parameters:
+        - $ref: '#/components/parameters/SportFilter'
+        - $ref: '#/components/parameters/Search'
+      responses:
+        '200':
+          description: Practice facilities (filtered by `sport` / `search` when provided).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PracticeFacility'
+    post:
+      tags:
+        - Practice
+      operationId: practiceCreate
+      security:
+        - firebaseAuth: []
+      summary: Create a practice facility
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PracticeFacilityInput'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PracticeFacility'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /practice/{slug}:
+    parameters:
+      - $ref: '#/components/parameters/Slug'
+    get:
+      tags:
+        - Practice
+      operationId: practiceGet
+      summary: Fetch a practice facility by slug
+      responses:
+        '200':
+          description: The practice facility.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PracticeFacility'
+        '404':
+          $ref: '#/components/responses/NotFoundPractice'
+    put:
+      tags:
+        - Practice
+      operationId: practiceReplace
+      security:
+        - firebaseAuth: []
+      summary: Full replacement of a practice facility
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PracticeFacilityInput'
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PracticeFacility'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFoundPractice'
+    delete:
+      tags:
+        - Practice
+      operationId: practiceDelete
+      security:
+        - firebaseAuth: []
+      summary: Delete a practice facility
       responses:
         '204':
           description: Deleted.
@@ -4186,6 +4422,290 @@ components:
         country:
           type:
             - string
+            - 'null'
+        website:
+          type:
+            - string
+            - 'null'
+        email:
+          type:
+            - string
+            - 'null'
+        phone:
+          type:
+            - string
+            - 'null'
+        imageUrl:
+          type:
+            - string
+            - 'null'
+    ShopType:
+      type: string
+      description: Kind of sports shop.
+      enum:
+        - RETAIL
+        - ONLINE
+        - RENTAL
+        - SERVICE
+    ShopStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+        - CLOSED
+    Shop:
+      type: object
+      description: A sports retailer / pro-shop, scoped to a primary sport.
+      required:
+        - slug
+        - name
+        - type
+        - primarySport
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/ShopType'
+        primarySport:
+          $ref: '#/components/schemas/SportWithOther'
+        status:
+          $ref: '#/components/schemas/ShopStatus'
+        description:
+          type:
+            - string
+            - 'null'
+        address:
+          type:
+            - string
+            - 'null'
+        emirate:
+          $ref: '#/components/schemas/Emirate'
+        city:
+          type:
+            - string
+            - 'null'
+        country:
+          type:
+            - string
+            - 'null'
+        website:
+          type:
+            - string
+            - 'null'
+        email:
+          type:
+            - string
+            - 'null'
+        phone:
+          type:
+            - string
+            - 'null'
+        imageUrl:
+          type:
+            - string
+            - 'null'
+          description: Public URL from /shops/upload.
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+    ShopInput:
+      type: object
+      required:
+        - name
+        - type
+        - primarySport
+        - status
+      properties:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/ShopType'
+        primarySport:
+          $ref: '#/components/schemas/SportWithOther'
+        status:
+          allOf:
+            - $ref: '#/components/schemas/ShopStatus'
+          default: ACTIVE
+        description:
+          type:
+            - string
+            - 'null'
+        address:
+          type:
+            - string
+            - 'null'
+        emirate:
+          $ref: '#/components/schemas/Emirate'
+        city:
+          type:
+            - string
+            - 'null'
+        country:
+          type:
+            - string
+            - 'null'
+        website:
+          type:
+            - string
+            - 'null'
+        email:
+          type:
+            - string
+            - 'null'
+        phone:
+          type:
+            - string
+            - 'null'
+        imageUrl:
+          type:
+            - string
+            - 'null'
+    PracticeType:
+      type: string
+      description: Kind of practice facility / surface.
+      enum:
+        - NETS
+        - COURT
+        - FIELD
+        - GYM
+        - TRACK
+        - POOL
+        - OTHER
+    PracticeStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+        - CLOSED
+    PracticeFacility:
+      type: object
+      description: A bookable practice facility / session for a sport (nets, courts, coaching, etc.).
+      required:
+        - slug
+        - name
+        - type
+        - primarySport
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/PracticeType'
+        primarySport:
+          $ref: '#/components/schemas/SportWithOther'
+        status:
+          $ref: '#/components/schemas/PracticeStatus'
+        description:
+          type:
+            - string
+            - 'null'
+        venue:
+          type:
+            - string
+            - 'null'
+          description: Optional Venue.slug reference (FK to saved venues) where the facility is located.
+        address:
+          type:
+            - string
+            - 'null'
+        emirate:
+          $ref: '#/components/schemas/Emirate'
+        city:
+          type:
+            - string
+            - 'null'
+        country:
+          type:
+            - string
+            - 'null'
+        hours:
+          type:
+            - string
+            - 'null'
+          description: Free-text opening hours / session times.
+        pricePerHour:
+          type:
+            - number
+            - 'null'
+          description: Indicative price per session/hour in AED.
+        website:
+          type:
+            - string
+            - 'null'
+        email:
+          type:
+            - string
+            - 'null'
+        phone:
+          type:
+            - string
+            - 'null'
+        imageUrl:
+          type:
+            - string
+            - 'null'
+          description: Public URL from /practice/upload.
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+        updatedAt:
+          $ref: '#/components/schemas/Timestamp'
+    PracticeFacilityInput:
+      type: object
+      required:
+        - name
+        - type
+        - primarySport
+        - status
+      properties:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/PracticeType'
+        primarySport:
+          $ref: '#/components/schemas/SportWithOther'
+        status:
+          allOf:
+            - $ref: '#/components/schemas/PracticeStatus'
+          default: ACTIVE
+        description:
+          type:
+            - string
+            - 'null'
+        venue:
+          type:
+            - string
+            - 'null'
+        address:
+          type:
+            - string
+            - 'null'
+        emirate:
+          $ref: '#/components/schemas/Emirate'
+        city:
+          type:
+            - string
+            - 'null'
+        country:
+          type:
+            - string
+            - 'null'
+        hours:
+          type:
+            - string
+            - 'null'
+        pricePerHour:
+          type:
+            - number
             - 'null'
         website:
           type:
@@ -8232,6 +8752,22 @@ components:
             $ref: '#/components/schemas/Error'
           example:
             error: Venue not found
+    NotFoundShop:
+      description: Shop not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Shop not found
+    NotFoundPractice:
+      description: Practice facility not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Practice facility not found
     NotFoundPhoto:
       description: Photo not found.
       content:
@@ -8309,6 +8845,13 @@ components:
       description: Case-insensitive substring filter on `name`.
       schema:
         type: string
+    SportFilter:
+      name: sport
+      in: query
+      required: false
+      description: Filter by primary sport (enum value, e.g. `SOCCER`).
+      schema:
+        $ref: '#/components/schemas/SportWithOther'
     PollId:
       name: id
       in: path

@@ -1,0 +1,7 @@
+description: Practice facility not found.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/Error.yaml
+    example:
+      error: Practice facility not found

@@ -1,0 +1,56 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Shops
+  operationId: shopGet
+  summary: Fetch a shop by slug
+  responses:
+    '200':
+      description: The shop.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Shop.yaml
+    '404':
+      $ref: ../components/responses/NotFoundShop.yaml
+put:
+  tags:
+    - Shops
+  operationId: shopReplace
+  security:
+    - firebaseAuth: []
+  summary: Full replacement of a shop
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/ShopInput.yaml
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '200':
+      description: Updated.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Shop.yaml
+    '404':
+      $ref: ../components/responses/NotFoundShop.yaml
+delete:
+  tags:
+    - Shops
+  operationId: shopDelete
+  security:
+    - firebaseAuth: []
+  summary: Delete a shop
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '204':
+      description: Deleted.

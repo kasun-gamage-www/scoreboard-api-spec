@@ -1,0 +1,7 @@
+description: Shop not found.
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/Error.yaml
+    example:
+      error: Shop not found

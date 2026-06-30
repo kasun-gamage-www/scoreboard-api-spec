@@ -1,0 +1,10 @@
+type: string
+description: Kind of practice facility / surface.
+enum:
+  - NETS
+  - COURT
+  - FIELD
+  - GYM
+  - TRACK
+  - POOL
+  - OTHER

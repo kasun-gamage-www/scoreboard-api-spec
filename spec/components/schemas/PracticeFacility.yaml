@@ -1,0 +1,75 @@
+type: object
+description: A bookable practice facility / session for a sport (nets, courts, coaching, etc.).
+required:
+  - slug
+  - name
+  - type
+  - primarySport
+  - status
+  - createdAt
+  - updatedAt
+properties:
+  slug:
+    type: string
+  name:
+    type: string
+  type:
+    $ref: ./PracticeType.yaml
+  primarySport:
+    $ref: ./SportWithOther.yaml
+  status:
+    $ref: ./PracticeStatus.yaml
+  description:
+    type:
+      - string
+      - 'null'
+  venue:
+    type:
+      - string
+      - 'null'
+    description: Optional Venue.slug reference (FK to saved venues) where the facility is located.
+  address:
+    type:
+      - string
+      - 'null'
+  emirate:
+    $ref: ./Emirate.yaml
+  city:
+    type:
+      - string
+      - 'null'
+  country:
+    type:
+      - string
+      - 'null'
+  hours:
+    type:
+      - string
+      - 'null'
+    description: Free-text opening hours / session times.
+  pricePerHour:
+    type:
+      - number
+      - 'null'
+    description: Indicative price per session/hour in AED.
+  website:
+    type:
+      - string
+      - 'null'
+  email:
+    type:
+      - string
+      - 'null'
+  phone:
+    type:
+      - string
+      - 'null'
+  imageUrl:
+    type:
+      - string
+      - 'null'
+    description: Public URL from /practice/upload.
+  createdAt:
+    $ref: ./Timestamp.yaml
+  updatedAt:
+    $ref: ./Timestamp.yaml

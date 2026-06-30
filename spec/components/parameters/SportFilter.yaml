@@ -1,0 +1,6 @@
+name: sport
+in: query
+required: false
+description: Filter by primary sport (enum value, e.g. `SOCCER`).
+schema:
+  $ref: ../schemas/SportWithOther.yaml

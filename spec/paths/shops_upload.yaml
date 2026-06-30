@@ -1,0 +1,16 @@
+post:
+  tags:
+    - Media
+  operationId: shopsUpload
+  summary: Presign alias (folder hard-coded to `shops`)
+  security:
+    - firebaseAuth: []
+  requestBody:
+    $ref: ../components/requestBodies/PresignAlias.yaml
+  responses:
+    '200':
+      $ref: ../components/responses/Presign.yaml
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml

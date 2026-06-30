@@ -1,0 +1,41 @@
+get:
+  tags:
+    - Shops
+  operationId: shopsList
+  summary: List shops (optional sport / name filters)
+  parameters:
+    - $ref: ../components/parameters/SportFilter.yaml
+    - $ref: ../components/parameters/Search.yaml
+  responses:
+    '200':
+      description: Shops (filtered by `sport` / `search` when provided).
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Shop.yaml
+post:
+  tags:
+    - Shops
+  operationId: shopCreate
+  security:
+    - firebaseAuth: []
+  summary: Create a shop
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/ShopInput.yaml
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '201':
+      description: Created.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Shop.yaml

@@ -1,0 +1,51 @@
+type: object
+required:
+  - name
+  - type
+  - primarySport
+  - status
+properties:
+  name:
+    type: string
+  type:
+    $ref: ./ShopType.yaml
+  primarySport:
+    $ref: ./SportWithOther.yaml
+  status:
+    allOf:
+      - $ref: ./ShopStatus.yaml
+    default: ACTIVE
+  description:
+    type:
+      - string
+      - 'null'
+  address:
+    type:
+      - string
+      - 'null'
+  emirate:
+    $ref: ./Emirate.yaml
+  city:
+    type:
+      - string
+      - 'null'
+  country:
+    type:
+      - string
+      - 'null'
+  website:
+    type:
+      - string
+      - 'null'
+  email:
+    type:
+      - string
+      - 'null'
+  phone:
+    type:
+      - string
+      - 'null'
+  imageUrl:
+    type:
+      - string
+      - 'null'

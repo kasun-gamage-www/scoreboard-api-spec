@@ -1,0 +1,63 @@
+type: object
+required:
+  - name
+  - type
+  - primarySport
+  - status
+properties:
+  name:
+    type: string
+  type:
+    $ref: ./PracticeType.yaml
+  primarySport:
+    $ref: ./SportWithOther.yaml
+  status:
+    allOf:
+      - $ref: ./PracticeStatus.yaml
+    default: ACTIVE
+  description:
+    type:
+      - string
+      - 'null'
+  venue:
+    type:
+      - string
+      - 'null'
+  address:
+    type:
+      - string
+      - 'null'
+  emirate:
+    $ref: ./Emirate.yaml
+  city:
+    type:
+      - string
+      - 'null'
+  country:
+    type:
+      - string
+      - 'null'
+  hours:
+    type:
+      - string
+      - 'null'
+  pricePerHour:
+    type:
+      - number
+      - 'null'
+  website:
+    type:
+      - string
+      - 'null'
+  email:
+    type:
+      - string
+      - 'null'
+  phone:
+    type:
+      - string
+      - 'null'
+  imageUrl:
+    type:
+      - string
+      - 'null'
