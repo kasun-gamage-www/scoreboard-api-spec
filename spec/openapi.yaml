@@ -242,6 +242,8 @@ paths:
     $ref: paths/articles.yaml
   /articles/popular:
     $ref: paths/articles_popular.yaml
+  /articles/latest:
+    $ref: paths/articles_latest.yaml
   /articles/{slug}:
     $ref: paths/articles_{slug}.yaml
   /tags:

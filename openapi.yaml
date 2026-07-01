@@ -691,6 +691,32 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: Invalid limit
+  /articles/latest:
+    get:
+      tags:
+        - Articles
+      operationId: articlesLatest
+      summary: Latest article feed (common + per-sport)
+      description: |-
+        The most-recently-created PUBLISHED articles, newest first (`createdAt DESC`). DRAFT and ARCHIVED are excluded. Without `sport` this is the common feed across all sports; with `sport` it is narrowed to that one sport.
+
+        The number returned is **fixed by the server** (currently 4) and is the same for the common and per-sport feeds — there is no client `limit` override. An unknown or unmatched `sport` yields an empty array (not an error), matching the other sport filters on the platform.
+      parameters:
+        - name: sport
+          in: query
+          required: false
+          description: Narrows the feed to a single sport. Case-insensitive and hyphen-tolerant (`motor-sports` and `MOTOR_SPORTS` are equivalent); normalised to the `ArticleSport` enum server-side. Omit for the common cross-sport feed.
+          schema:
+            $ref: '#/components/schemas/ArticleSport'
+      responses:
+        '200':
+          description: The latest published articles (at most the server-fixed count), newest first. Empty if none match.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Article'
   /articles/{slug}:
     parameters:
       - $ref: '#/components/parameters/Slug'
