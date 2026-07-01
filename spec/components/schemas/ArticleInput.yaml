@@ -56,3 +56,13 @@ properties:
       - number
       - 'null'
     description: Required when imageYAlignment is `custom`; MUST be null otherwise.
+  popularityBoost:
+    type: number
+    default: 0
+    description: >-
+      Manual popularity weight added on top of organic signals when ranking the
+      `/articles/popular` feed. Higher values boost the article; negative values
+      demote it. Omitted → defaults to `0`. This field is write-accepted here but
+      is **not echoed back** by the public reads (it is server-side
+      `select:false`); read the stored value via the admin-only
+      `GET /articles/{slug}/full`.

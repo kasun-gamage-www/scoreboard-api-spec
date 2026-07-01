@@ -4,9 +4,10 @@ get:
   operationId: articlesPopular
   summary: Popular article feed
   description: >-
-    Currently implemented as the most-recently-created PUBLISHED articles,
-    newest first (`createdAt DESC`). DRAFT and ARCHIVED are excluded. The
-    ranking will change when real popularity signals exist; the shape will not.
+    Ranks PUBLISHED articles by their editor-set `popularityBoost` (descending),
+    tie-broken by `createdAt DESC`. DRAFT and ARCHIVED are excluded. As organic
+    popularity signals are added they will be combined with `popularityBoost`;
+    the response shape will not change.
   parameters:
     - name: limit
       in: query

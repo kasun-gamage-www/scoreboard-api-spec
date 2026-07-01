@@ -1,0 +1,27 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Articles
+  operationId: articleGetFull
+  security:
+    - firebaseAuth: []
+  summary: Admin read of an article including popularityBoost
+  description: >-
+    Admin-only single-article read used by the CMS edit view. Identical to
+    `GET /articles/{slug}` but additionally returns the `popularityBoost`
+    weight, which is `select:false` on the server and so omitted from every
+    public read. DRAFT and ARCHIVED articles are reachable (admin preview).
+  responses:
+    '200':
+      description: The article, including its `popularityBoost`.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ArticleFull.yaml
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../components/responses/NotFoundArticle.yaml

@@ -1,0 +1,16 @@
+description: >-
+  An article as returned by the admin-only `GET /articles/{slug}/full` read. It
+  is the full `Article` shape plus the editorial `popularityBoost` weight, which
+  is `select:false` on the server and therefore withheld from every public read.
+allOf:
+  - $ref: ./Article.yaml
+  - type: object
+    properties:
+      popularityBoost:
+        type: number
+        default: 0
+        description: >-
+          Manual popularity weight set by editors, added on top of any organic
+          popularity signals when ranking the `/articles/popular` feed. Higher
+          values surface the article more prominently; negative values demote
+          it. Defaults to `0` (no adjustment).

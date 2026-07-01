@@ -663,7 +663,7 @@ paths:
         - Articles
       operationId: articlesPopular
       summary: Popular article feed
-      description: Currently implemented as the most-recently-created PUBLISHED articles, newest first (`createdAt DESC`). DRAFT and ARCHIVED are excluded. The ranking will change when real popularity signals exist; the shape will not.
+      description: Ranks PUBLISHED articles by their editor-set `popularityBoost` (descending), tie-broken by `createdAt DESC`. DRAFT and ARCHIVED are excluded. As organic popularity signals are added they will be combined with `popularityBoost`; the response shape will not change.
       parameters:
         - name: limit
           in: query
@@ -782,6 +782,30 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /articles/{slug}/full:
+    parameters:
+      - $ref: '#/components/parameters/Slug'
+    get:
+      tags:
+        - Articles
+      operationId: articleGetFull
+      security:
+        - firebaseAuth: []
+      summary: Admin read of an article including popularityBoost
+      description: Admin-only single-article read used by the CMS edit view. Identical to `GET /articles/{slug}` but additionally returns the `popularityBoost` weight, which is `select:false` on the server and so omitted from every public read. DRAFT and ARCHIVED articles are reachable (admin preview).
+      responses:
+        '200':
+          description: The article, including its `popularityBoost`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleFull'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFoundArticle'
   /tags:
     get:
       tags:
@@ -3791,6 +3815,20 @@ components:
             - number
             - 'null'
           description: Required when imageYAlignment is `custom`; MUST be null otherwise.
+        popularityBoost:
+          type: number
+          default: 0
+          description: Manual popularity weight added on top of organic signals when ranking the `/articles/popular` feed. Higher values boost the article; negative values demote it. Omitted → defaults to `0`. This field is write-accepted here but is **not echoed back** by the public reads (it is server-side `select:false`); read the stored value via the admin-only `GET /articles/{slug}/full`.
+    ArticleFull:
+      description: An article as returned by the admin-only `GET /articles/{slug}/full` read. It is the full `Article` shape plus the editorial `popularityBoost` weight, which is `select:false` on the server and therefore withheld from every public read.
+      allOf:
+        - $ref: '#/components/schemas/Article'
+        - type: object
+          properties:
+            popularityBoost:
+              type: number
+              default: 0
+              description: Manual popularity weight set by editors, added on top of any organic popularity signals when ranking the `/articles/popular` feed. Higher values surface the article more prominently; negative values demote it. Defaults to `0` (no adjustment).
     Tag:
       type: object
       required:
