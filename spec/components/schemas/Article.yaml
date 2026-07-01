@@ -22,7 +22,11 @@ properties:
   category:
     $ref: ./ArticleCategory.yaml
   sport:
-    $ref: ./ArticleSport.yaml
+    oneOf:
+      - $ref: ./ArticleSport.yaml
+      - type: 'null'
+    description: >-
+      `null` for a general article that isn't specific to a single sport.
   status:
     $ref: ./ArticleStatus.yaml
   summary:

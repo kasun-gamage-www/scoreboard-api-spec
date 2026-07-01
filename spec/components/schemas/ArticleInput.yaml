@@ -4,7 +4,6 @@ required:
   - author
   - content
   - category
-  - sport
   - status
 properties:
   title:
@@ -17,7 +16,13 @@ properties:
   category:
     $ref: ./ArticleCategory.yaml
   sport:
-    $ref: ./ArticleSport.yaml
+    oneOf:
+      - $ref: ./ArticleSport.yaml
+      - type: 'null'
+    description: >-
+      Omit or send `null` for an article that isn't specific to a single sport
+      (a general / cross-sport piece). Such an article does not appear in the
+      sport-filtered `/articles/latest?sport=…` feeds, only in the common feed.
   status:
     allOf:
       - $ref: ./ArticleStatus.yaml

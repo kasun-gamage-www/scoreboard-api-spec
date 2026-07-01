@@ -74,7 +74,7 @@ info:
 
     schedule import) plus the `/user` family (`GET /user`, `POST /user`,
 
-    `PUT /user/{uid}`) requires the token's account to carry the `admin: true`
+    `PUT /user/{uid}`, `DELETE /user/{uid}`) requires the token's account to carry the `admin: true`
 
     custom claim. The first admin is provisioned out-of-band (created in the
 

@@ -38,7 +38,7 @@ info:
     Every mutating endpoint (POST / PUT / DELETE — resource CRUD, media
     presign / delete, the per-resource `/<resource>/upload` aliases, bulk
     schedule import) plus the `/user` family (`GET /user`, `POST /user`,
-    `PUT /user/{uid}`) requires the token's account to carry the `admin: true`
+    `PUT /user/{uid}`, `DELETE /user/{uid}`) requires the token's account to carry the `admin: true`
     custom claim. The first admin is provisioned out-of-band (created in the
     Firebase console, then granted the claim via `scripts/set-admin.js`);
     thereafter an existing admin can create accounts and grant/revoke admin
@@ -248,6 +248,31 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: You cannot revoke your own admin privileges
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFoundUser'
+    delete:
+      tags:
+        - Users
+      operationId: userDelete
+      security:
+        - firebaseAuth: []
+      summary: Delete a user
+      description: Admin-only. Permanently deletes the Firebase account and removes any operational role assignments it held. A caller cannot delete their own account (guards against locking themselves out mid-session). Reachable with and without the `/api` prefix.
+      responses:
+        '204':
+          description: Deleted.
+        '400':
+          description: The caller tried to delete their own account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: You cannot delete your own account
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -3720,7 +3745,10 @@ components:
         category:
           $ref: '#/components/schemas/ArticleCategory'
         sport:
-          $ref: '#/components/schemas/ArticleSport'
+          oneOf:
+            - $ref: '#/components/schemas/ArticleSport'
+            - type: 'null'
+          description: '`null` for a general article that isn''t specific to a single sport.'
         status:
           $ref: '#/components/schemas/ArticleStatus'
         summary:
@@ -3770,7 +3798,6 @@ components:
         - author
         - content
         - category
-        - sport
         - status
       properties:
         title:
@@ -3783,7 +3810,10 @@ components:
         category:
           $ref: '#/components/schemas/ArticleCategory'
         sport:
-          $ref: '#/components/schemas/ArticleSport'
+          oneOf:
+            - $ref: '#/components/schemas/ArticleSport'
+            - type: 'null'
+          description: Omit or send `null` for an article that isn't specific to a single sport (a general / cross-sport piece). Such an article does not appear in the sport-filtered `/articles/latest?sport=…` feeds, only in the common feed.
         status:
           allOf:
             - $ref: '#/components/schemas/ArticleStatus'

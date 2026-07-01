@@ -46,3 +46,32 @@ put:
         application/json:
           schema:
             $ref: ../components/schemas/User.yaml
+delete:
+  tags:
+    - Users
+  operationId: userDelete
+  security:
+    - firebaseAuth: []
+  summary: Delete a user
+  description: >-
+    Admin-only. Permanently deletes the Firebase account and removes any
+    operational role assignments it held. A caller cannot delete their own
+    account (guards against locking themselves out mid-session). Reachable with
+    and without the `/api` prefix.
+  responses:
+    '400':
+      description: The caller tried to delete their own account.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: You cannot delete your own account
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '404':
+      $ref: ../components/responses/NotFoundUser.yaml
+    '204':
+      description: Deleted.
