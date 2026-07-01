@@ -701,6 +701,8 @@ paths:
         The most-recently-created PUBLISHED articles, newest first (`createdAt DESC`). DRAFT and ARCHIVED are excluded. Without `sport` this is the common feed across all sports; with `sport` it is narrowed to that one sport.
 
         The number returned is **fixed by the server** (currently 4) and is the same for the common and per-sport feeds — there is no client `limit` override. An unknown or unmatched `sport` yields an empty array (not an error), matching the other sport filters on the platform.
+
+        **Caching.** Responses are browser-cacheable (`Cache-Control: public, max-age=60`) and may additionally be served from a server-side cache that is invalidated on every article create/update/delete — so a publish is reflected on the next uncached read, and the only residual staleness is the browser's up-to-~1-minute window.
       parameters:
         - name: sport
           in: query
@@ -711,6 +713,12 @@ paths:
       responses:
         '200':
           description: The latest published articles (at most the server-fixed count), newest first. Empty if none match.
+          headers:
+            Cache-Control:
+              description: Browser cache directive; served off the ELB (no shared cache).
+              schema:
+                type: string
+                example: public, max-age=60
           content:
             application/json:
               schema:
