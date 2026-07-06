@@ -1,0 +1,26 @@
+get:
+  tags:
+    - Articles
+  operationId: articlesPopularHome
+  summary: Home-page popular rail
+  description: >-
+    The 5 most popular PUBLISHED articles **excluding** whatever the common
+    `/articles/latest` feed currently shows, so the home page's Latest and
+    Popular sections never repeat an article. Ordered by `popularityScore
+    DESC`, tie-broken by `createdAt DESC`. The count is server-fixed (no
+    `limit` param) — this feed exists only for the home page. Served through a
+    server-side cache: article writes invalidate immediately, while popularity
+    drift alone is picked up when the ~6-hour TTL lapses, so the rail
+    reshuffles at most a few times a day. Also browser-cacheable (same TTL as
+    `/articles/latest`).
+  responses:
+    '200':
+      description: >-
+        Up to 5 published articles, most popular first, disjoint from the
+        common latest feed. Empty if nothing qualifies.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Article.yaml

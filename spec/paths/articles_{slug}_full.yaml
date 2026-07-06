@@ -6,15 +6,19 @@ get:
   operationId: articleGetFull
   security:
     - firebaseAuth: []
-  summary: Admin read of an article including popularityBoost
+  summary: Admin read of an article including its server-internal fields
   description: >-
     Admin-only single-article read used by the CMS edit view. Identical to
-    `GET /articles/{slug}` but additionally returns the `popularityBoost`
-    weight, which is `select:false` on the server and so omitted from every
-    public read. DRAFT and ARCHIVED articles are reachable (admin preview).
+    `GET /articles/{slug}` but additionally returns the fields that are
+    `select:false` on the server and so omitted from every public read: the
+    editorial `popularityBoost`, the all-time `viewCount`, and the computed
+    `popularityScore` (so editors can see the organic numbers behind a
+    ranking). DRAFT and ARCHIVED articles are reachable (admin preview).
   responses:
     '200':
-      description: The article, including its `popularityBoost`.
+      description: >-
+        The article, including `popularityBoost`, `viewCount` and
+        `popularityScore`.
       content:
         application/json:
           schema:

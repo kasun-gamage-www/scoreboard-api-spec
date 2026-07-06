@@ -649,9 +649,31 @@ paths:
         - Articles
       operationId: articlesList
       summary: List all articles
+      description: Default order is newest first (`createdAt DESC`). `sortField` switches to a whitelisted server-side sort — `popularityScore` ranks by the same precomputed popularity used by `/articles/popular` (the score itself is `select:false` and not echoed back). Non-`createdAt` sorts are tie-broken by `createdAt DESC`; an unknown `sortField` is ignored and the default order applies.
+      parameters:
+        - name: sortField
+          in: query
+          required: false
+          description: Whitelisted sort field. Unknown values fall back to the default sort.
+          schema:
+            type: string
+            enum:
+              - createdAt
+              - popularityScore
+        - name: sortOrder
+          in: query
+          required: false
+          description: '`desc`/`-1` for descending; anything else sorts ascending.'
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+              - '1'
+              - '-1'
       responses:
         '200':
-          description: All articles.
+          description: All articles, ordered as requested.
           content:
             application/json:
               schema:
@@ -688,7 +710,7 @@ paths:
         - Articles
       operationId: articlesPopular
       summary: Popular article feed
-      description: Ranks PUBLISHED articles by their editor-set `popularityBoost` (descending), tie-broken by `createdAt DESC`. DRAFT and ARCHIVED are excluded. As organic popularity signals are added they will be combined with `popularityBoost`; the response shape will not change.
+      description: 'Ranks PUBLISHED articles by `popularityScore` (descending), tie-broken by `createdAt DESC`. DRAFT and ARCHIVED are excluded. The score is a server-side blend of organic views and the editorial boost, recomputed periodically and on article writes: `3 × views(last 2 days) + views(prior 5 days) + popularityBoost`, where views are beacon-reported reads (`POST /articles/{slug}/view`) deduplicated per client per ~30 minutes. `popularityBoost` is therefore denominated in view-equivalents: a boost of 500 ranks like ~500 recent views. The score is `select:false` on the server, so it does not appear in this response.'
       parameters:
         - name: limit
           in: query
@@ -699,9 +721,15 @@ paths:
             default: 10
             minimum: 1
             maximum: 128
+        - name: sport
+          in: query
+          required: false
+          description: Narrows the ranking to a single sport before `limit` is applied. Case-insensitive and hyphen-tolerant (`motor-sports` and `MOTOR_SPORTS` are equivalent); normalised to the `ArticleSport` enum server-side. An unknown or unmatched `sport` yields an empty array (not an error), matching `/articles/latest`. Omit for the global ranking.
+          schema:
+            $ref: '#/components/schemas/ArticleSport'
       responses:
         '200':
-          description: Up to `limit` published articles, newest first.
+          description: Up to `limit` published articles, most popular first.
           content:
             application/json:
               schema:
@@ -716,6 +744,22 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: Invalid limit
+  /articles/popular/home:
+    get:
+      tags:
+        - Articles
+      operationId: articlesPopularHome
+      summary: Home-page popular rail
+      description: 'The 5 most popular PUBLISHED articles **excluding** whatever the common `/articles/latest` feed currently shows, so the home page''s Latest and Popular sections never repeat an article. Ordered by `popularityScore DESC`, tie-broken by `createdAt DESC`. The count is server-fixed (no `limit` param) — this feed exists only for the home page. Served through a server-side cache: article writes invalidate immediately, while popularity drift alone is picked up when the ~6-hour TTL lapses, so the rail reshuffles at most a few times a day. Also browser-cacheable (same TTL as `/articles/latest`).'
+      responses:
+        '200':
+          description: Up to 5 published articles, most popular first, disjoint from the common latest feed. Empty if nothing qualifies.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Article'
   /articles/latest:
     get:
       tags:
@@ -816,11 +860,11 @@ paths:
       operationId: articleGetFull
       security:
         - firebaseAuth: []
-      summary: Admin read of an article including popularityBoost
-      description: Admin-only single-article read used by the CMS edit view. Identical to `GET /articles/{slug}` but additionally returns the `popularityBoost` weight, which is `select:false` on the server and so omitted from every public read. DRAFT and ARCHIVED articles are reachable (admin preview).
+      summary: Admin read of an article including its server-internal fields
+      description: 'Admin-only single-article read used by the CMS edit view. Identical to `GET /articles/{slug}` but additionally returns the fields that are `select:false` on the server and so omitted from every public read: the editorial `popularityBoost`, the all-time `viewCount`, and the computed `popularityScore` (so editors can see the organic numbers behind a ranking). DRAFT and ARCHIVED articles are reachable (admin preview).'
       responses:
         '200':
-          description: The article, including its `popularityBoost`.
+          description: The article, including `popularityBoost`, `viewCount` and `popularityScore`.
           content:
             application/json:
               schema:
@@ -831,6 +875,18 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFoundArticle'
+  /articles/{slug}/view:
+    parameters:
+      - $ref: '#/components/parameters/Slug'
+    post:
+      tags:
+        - Articles
+      operationId: articleRecordView
+      summary: Record a view (read) of an article
+      description: Fire-and-forget view beacon. Clients fire it (e.g. via `sendBeacon`) after roughly 10 seconds of dwell on an article, so a recorded view means "read", not "landed". Views are deduplicated per client per article over a ~30 minute window, buffered in the server, and persisted in batches; they feed the organic component of the `/articles/popular` ranking and the article's all-time view count. The response is always `204` with no body — counted, deduplicated, unknown slug or malformed slug are indistinguishable — so clients must never retry and cannot probe dedup state. No request body.
+      responses:
+        '204':
+          description: 'Accepted. Sent unconditionally (also for deduplicated, dropped or unknown-slug beacons); marked `Cache-Control: no-store`.'
   /tags:
     get:
       tags:
@@ -3850,7 +3906,7 @@ components:
           default: 0
           description: Manual popularity weight added on top of organic signals when ranking the `/articles/popular` feed. Higher values boost the article; negative values demote it. Omitted → defaults to `0`. This field is write-accepted here but is **not echoed back** by the public reads (it is server-side `select:false`); read the stored value via the admin-only `GET /articles/{slug}/full`.
     ArticleFull:
-      description: An article as returned by the admin-only `GET /articles/{slug}/full` read. It is the full `Article` shape plus the editorial `popularityBoost` weight, which is `select:false` on the server and therefore withheld from every public read.
+      description: 'An article as returned by the admin-only `GET /articles/{slug}/full` read. It is the full `Article` shape plus the server-internal (`select:false`) fields withheld from every public read: the editorial `popularityBoost` weight and the organic view-tracking numbers (`viewCount`, `popularityScore`).'
       allOf:
         - $ref: '#/components/schemas/Article'
         - type: object
@@ -3858,7 +3914,17 @@ components:
             popularityBoost:
               type: number
               default: 0
-              description: Manual popularity weight set by editors, added on top of any organic popularity signals when ranking the `/articles/popular` feed. Higher values surface the article more prominently; negative values demote it. Defaults to `0` (no adjustment).
+              description: Manual popularity weight set by editors, added on top of any organic popularity signals when ranking the `/articles/popular` feed. Higher values surface the article more prominently; negative values demote it. Denominated in view-equivalents (a boost of 500 ranks like ~500 recent views). Defaults to `0` (no adjustment).
+            viewCount:
+              type: number
+              readOnly: true
+              default: 0
+              description: 'All-time deduplicated read count, accumulated from the view beacon (`POST /articles/{slug}/view`) since tracking launch. Deliberately lower than a raw pageview metric: a view requires ~10s dwell and is deduplicated per client per ~30 minutes. Server-managed — values sent in create/update bodies are ignored. Reserved for the future public view badge.'
+            popularityScore:
+              type: number
+              readOnly: true
+              default: 0
+              description: 'Precomputed ranking key for `/articles/popular`: `3 × views(last 2 days) + views(prior 5 days) + popularityBoost`. Refreshed periodically and on article writes. Server-managed — values sent in create/update bodies are ignored.'
     Tag:
       type: object
       required:

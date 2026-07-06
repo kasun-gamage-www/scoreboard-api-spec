@@ -1,7 +1,8 @@
 description: >-
   An article as returned by the admin-only `GET /articles/{slug}/full` read. It
-  is the full `Article` shape plus the editorial `popularityBoost` weight, which
-  is `select:false` on the server and therefore withheld from every public read.
+  is the full `Article` shape plus the server-internal (`select:false`) fields
+  withheld from every public read: the editorial `popularityBoost` weight and
+  the organic view-tracking numbers (`viewCount`, `popularityScore`).
 allOf:
   - $ref: ./Article.yaml
   - type: object
@@ -13,4 +14,25 @@ allOf:
           Manual popularity weight set by editors, added on top of any organic
           popularity signals when ranking the `/articles/popular` feed. Higher
           values surface the article more prominently; negative values demote
-          it. Defaults to `0` (no adjustment).
+          it. Denominated in view-equivalents (a boost of 500 ranks like ~500
+          recent views). Defaults to `0` (no adjustment).
+      viewCount:
+        type: number
+        readOnly: true
+        default: 0
+        description: >-
+          All-time deduplicated read count, accumulated from the view beacon
+          (`POST /articles/{slug}/view`) since tracking launch. Deliberately
+          lower than a raw pageview metric: a view requires ~10s dwell and is
+          deduplicated per client per ~30 minutes. Server-managed — values sent
+          in create/update bodies are ignored. Reserved for the future public
+          view badge.
+      popularityScore:
+        type: number
+        readOnly: true
+        default: 0
+        description: >-
+          Precomputed ranking key for `/articles/popular`:
+          `3 × views(last 2 days) + views(prior 5 days) + popularityBoost`.
+          Refreshed periodically and on article writes. Server-managed — values
+          sent in create/update bodies are ignored.

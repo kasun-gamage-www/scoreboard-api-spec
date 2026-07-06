@@ -4,10 +4,15 @@ get:
   operationId: articlesPopular
   summary: Popular article feed
   description: >-
-    Ranks PUBLISHED articles by their editor-set `popularityBoost` (descending),
-    tie-broken by `createdAt DESC`. DRAFT and ARCHIVED are excluded. As organic
-    popularity signals are added they will be combined with `popularityBoost`;
-    the response shape will not change.
+    Ranks PUBLISHED articles by `popularityScore` (descending), tie-broken by
+    `createdAt DESC`. DRAFT and ARCHIVED are excluded. The score is a
+    server-side blend of organic views and the editorial boost, recomputed
+    periodically and on article writes:
+    `3 × views(last 2 days) + views(prior 5 days) + popularityBoost`, where
+    views are beacon-reported reads (`POST /articles/{slug}/view`) deduplicated
+    per client per ~30 minutes. `popularityBoost` is therefore denominated in
+    view-equivalents: a boost of 500 ranks like ~500 recent views. The score is
+    `select:false` on the server, so it does not appear in this response.
   parameters:
     - name: limit
       in: query
@@ -18,9 +23,21 @@ get:
         default: 10
         minimum: 1
         maximum: 128
+    - name: sport
+      in: query
+      required: false
+      description: >-
+        Narrows the ranking to a single sport before `limit` is applied.
+        Case-insensitive and hyphen-tolerant (`motor-sports` and
+        `MOTOR_SPORTS` are equivalent); normalised to the `ArticleSport` enum
+        server-side. An unknown or unmatched `sport` yields an empty array
+        (not an error), matching `/articles/latest`. Omit for the global
+        ranking.
+      schema:
+        $ref: ../components/schemas/ArticleSport.yaml
   responses:
     '200':
-      description: Up to `limit` published articles, newest first.
+      description: Up to `limit` published articles, most popular first.
       content:
         application/json:
           schema:

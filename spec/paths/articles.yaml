@@ -3,9 +3,37 @@ get:
     - Articles
   operationId: articlesList
   summary: List all articles
+  description: >-
+    Default order is newest first (`createdAt DESC`). `sortField` switches to a
+    whitelisted server-side sort — `popularityScore` ranks by the same
+    precomputed popularity used by `/articles/popular` (the score itself is
+    `select:false` and not echoed back). Non-`createdAt` sorts are tie-broken
+    by `createdAt DESC`; an unknown `sortField` is ignored and the default
+    order applies.
+  parameters:
+    - name: sortField
+      in: query
+      required: false
+      description: Whitelisted sort field. Unknown values fall back to the default sort.
+      schema:
+        type: string
+        enum:
+          - createdAt
+          - popularityScore
+    - name: sortOrder
+      in: query
+      required: false
+      description: '`desc`/`-1` for descending; anything else sorts ascending.'
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+          - '1'
+          - '-1'
   responses:
     '200':
-      description: All articles.
+      description: All articles, ordered as requested.
       content:
         application/json:
           schema:
