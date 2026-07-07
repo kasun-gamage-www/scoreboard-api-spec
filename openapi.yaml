@@ -108,6 +108,8 @@ tags:
     description: Non-match calendar items (training, ceremonies, etc.).
   - name: Matches
     description: Generic cross-sport match resource (CRUD, featured flag, bulk import).
+  - name: Cricket Input
+    description: Admin write surface for raw cricket match data at three detail levels — ball-by-ball, over-by-over, or match totals. Only raw facts are accepted; the server derives everything displayed (scorecards, commentary, analysis, live snapshots, summary cards) on every write.
   - name: Polls
     description: Public reader polls + admin authoring.
   - name: Cricket Display
@@ -2316,6 +2318,267 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '413':
+          description: File exceeds the 10 MB upload cap.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: File too large
+        '422':
+          description: All rows failed validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleUploadFailure'
+  /matches/{slug}/cricket-data:
+    parameters:
+      - $ref: '#/components/parameters/Slug'
+    get:
+      tags:
+        - Cricket Input
+      operationId: cricketDataGet
+      security:
+        - firebaseAuth: []
+      summary: Fetch a match's raw cricket entry data (hydrates the score editor)
+      description: Returns the stored raw facts plus the current server-derived live snapshot. 404 when the match is unknown — or exists but has no cricket data yet (implicitly MATCH-level; the editor then offers match setup).
+      responses:
+        '200':
+          description: Raw cricket data + live snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CricketMatchDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Match unknown, not a cricket match, or no cricket data yet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: No cricket data for this match
+    put:
+      tags:
+        - Cricket Input
+      operationId: cricketDataReplace
+      security:
+        - firebaseAuth: []
+      summary: Create or fully replace a match's raw cricket data
+      description: Full replacement, not a merge — used by the admin match setup, the over-by-over save and the CSV importer. On every accepted write the server re-derives all display surfaces (summary card, scorecard, commentary, analysis, live), mirrors innings totals onto `Match.details`, updates the in-memory live snapshot and busts the public cricket caches before responding. Impossible states (an 11th wicket, a name not in the lineup on a BALL-level innings, non-contiguous innings `seq`) are rejected with 400.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CricketMatchDataInput'
+      responses:
+        '200':
+          description: Stored data + fresh live snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CricketMatchDataResponse'
+        '400':
+          description: Validation or derivation error (impossible state).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'innings 1: wicket 11 is impossible'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFoundMatch'
+  /matches/{slug}/cricket-data/balls:
+    parameters:
+      - $ref: '#/components/parameters/Slug'
+    post:
+      tags:
+        - Cricket Input
+      operationId: cricketDataAppendBall
+      security:
+        - firebaseAuth: []
+      summary: Append one delivery (live ball-by-ball entry)
+      description: 'Appends to the innings'' delivery sequence. The server assigns `over`/`ballInOver` from the count of legal balls, computes `isLegal`, persists before acknowledging, re-derives all display surfaces and updates the in-memory live snapshot synchronously — guest `/match/cricket/{slug}/live` polls see the ball immediately. Optimistic concurrency: `expectedBallCount` must equal the server''s current delivery count for the innings, else 409 and nothing is written.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CricketBallInput'
+      responses:
+        '200':
+          description: Ball stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CricketBallResponse'
+        '400':
+          description: Validation or derivation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Match unknown or has no cricket data / no such innings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Stale `expectedBallCount` — re-hydrate and retry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CricketBallConflict'
+  /matches/{slug}/cricket-data/balls/last:
+    parameters:
+      - $ref: '#/components/parameters/Slug'
+    delete:
+      tags:
+        - Cricket Input
+      operationId: cricketDataUndoBall
+      security:
+        - firebaseAuth: []
+      summary: Undo the most recent delivery of an innings
+      description: Pops the innings' last delivery, re-derives all display surfaces and updates the live snapshot — a wicket undo restores the batter, an over-boundary undo restores the previous over. Guarded by the same optimistic-concurrency check as append (`expected` = the client's current delivery count).
+      parameters:
+        - name: innings
+          in: query
+          required: true
+          description: Innings `seq` to undo from.
+          schema:
+            type: integer
+            minimum: 1
+        - name: expected
+          in: query
+          required: true
+          description: Client's current delivery count for the innings.
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Ball removed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CricketBallResponse'
+        '400':
+          description: Nothing to undo, or validation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Match unknown or has no cricket data / no such innings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Stale `expected` count — re-hydrate and retry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CricketBallConflict'
+  /matches/{slug}/cricket-data/state:
+    parameters:
+      - $ref: '#/components/parameters/Slug'
+    patch:
+      tags:
+        - Cricket Input
+      operationId: cricketDataPatchState
+      security:
+        - firebaseAuth: []
+      summary: Patch match/innings live state (toss, status, innings lifecycle, crease)
+      description: Send any subset of the patch fields — set the toss, start or close an innings, repoint the crease, name the player of the match, or transition the parent Match status (LIVE to start, COMPLETED to finalise; COMPLETED also produces the derived result label and schedules live-snapshot eviction). Every accepted patch re-derives the display surfaces and busts the public cricket caches.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CricketStatePatch'
+      responses:
+        '200':
+          description: Updated data + fresh live snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CricketMatchDataResponse'
+        '400':
+          description: Validation or derivation error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFoundMatch'
+  /matches/{slug}/cricket-data/upload:
+    parameters:
+      - $ref: '#/components/parameters/Slug'
+    post:
+      tags:
+        - Cricket Input
+      operationId: cricketDataUpload
+      security:
+        - firebaseAuth: []
+      summary: Import a match's cricket data from CSV / Excel (single template)
+      description: 'Admin-only. One template covers finished and ongoing matches at all three detail levels. Fixed header: `rowType,key,value,innings,battingTeam,over, ball,striker,nonStriker,bowler,runsOffBat,extraType,extraRuns,wicketType, playerOut,fielder,runs,wickets,overs`. Row kinds: META (key/value pairs — format, status, tossWonBy, tossDecision, batFirst, playerOfMatch, resultNote), PLAYER (adds lineup players missing from the match), INNINGS (one per innings, declares order; totals required only when the innings has no OVER/BALL rows), OVER (per-over totals) and BALL (one delivery; file order wins over the over/ball columns — the server re-numbers). Detail level is inferred per innings: BALL rows ⇒ BALL, else OVER rows ⇒ OVER, else MATCH from the INNINGS totals. `META status=LIVE` marks an ongoing match — unclosed innings stay IN_PROGRESS and the crease state is seeded from the last BALL row, so the admin ball pad resumes exactly where the file left off. The parsed result funnels through the same pipeline as `PUT …/cricket-data` (validation, derivation, mirroring, cache busting). Row errors follow the schedule importer''s contract; 422 when nothing imports. The file is capped at 10 MB (413 beyond that).'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV or Excel file (.csv, .xls, .xlsx).
+      responses:
+        '200':
+          description: Import summary.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CricketUploadResult'
+        '400':
+          description: No file uploaded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: No file uploaded
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFoundMatch'
         '413':
           description: File exceeds the 10 MB upload cap.
           content:
@@ -5462,6 +5725,15 @@ components:
       properties:
         cricketFormat:
           $ref: '#/components/schemas/CricketFormat'
+        cricketBatFirst:
+          type:
+            - string
+            - 'null'
+          enum:
+            - HOME
+            - AWAY
+            - null
+          description: Which side batted first — a raw fact needed to derive the result label ("won by N runs" vs "won by M wickets") for matches entered as totals only. For matches with ball/over-level cricket data the toss stored there takes precedence.
         homeInn1Runs:
           type:
             - number
@@ -5879,6 +6151,576 @@ components:
         error:
           type: string
           example: All rows failed validation
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduleRowError'
+    CricketDetailLevel:
+      type: string
+      description: Granularity of the raw facts entered for an innings. BALL innings carry every delivery; OVER innings carry per-over totals; MATCH innings carry only final totals. Different innings of the same match may use different levels — admins enter what they have.
+      enum:
+        - MATCH
+        - OVER
+        - BALL
+    CricketOverSummary:
+      type: object
+      description: Per-over totals for an OVER-level innings.
+      required:
+        - over
+        - runs
+      properties:
+        over:
+          type: integer
+          minimum: 1
+          description: 1-based over number.
+        runs:
+          type: integer
+          minimum: 0
+        wickets:
+          type: integer
+          minimum: 0
+          maximum: 10
+          default: 0
+        bowler:
+          type:
+            - string
+            - 'null'
+          description: Optional lineup name; enables per-bowler attribution in analysis.
+    CricketExtras:
+      type: object
+      description: 'Extras conceded on one delivery. WIDE and NO_BALL are illegal deliveries and do not advance the legal-ball count; `runs` is the total extras awarded on the ball, including the mandatory 1 for WIDE/NO_BALL (a wide four is `{type: WIDE, runs: 5}`). Byes/leg-byes off a no-ball are entered as NO_BALL with the combined runs.'
+      required:
+        - type
+        - runs
+      properties:
+        type:
+          type: string
+          enum:
+            - WIDE
+            - NO_BALL
+            - BYE
+            - LEG_BYE
+            - PENALTY
+        runs:
+          type: integer
+          minimum: 1
+    CricketWicket:
+      type: object
+      description: Dismissal recorded on one delivery. `playerOut` is a lineup name — usually the striker, but may be the non-striker (run-outs). RETIRED_HURT does not count towards the ten-wicket limit.
+      required:
+        - type
+        - playerOut
+      properties:
+        type:
+          type: string
+          enum:
+            - BOWLED
+            - CAUGHT
+            - LBW
+            - RUN_OUT
+            - STUMPED
+            - HIT_WICKET
+            - RETIRED_HURT
+            - RETIRED_OUT
+            - OBSTRUCTING_FIELD
+            - TIMED_OUT
+        playerOut:
+          type: string
+          description: Lineup name of the dismissed batter.
+        fielder:
+          type:
+            - string
+            - 'null'
+          description: Catcher / thrower / stumper for CAUGHT, RUN_OUT and STUMPED; null otherwise.
+    CricketDelivery:
+      type: object
+      description: 'One delivery — raw facts only. `over`, `ballInOver`, `isLegal` and `enteredAt` are server-assigned from the delivery sequence and are read-only (never sent by clients). Striker/non-striker are raw facts: the admin UI suggests strike rotation (odd runs, end of over) but the server stores what was sent, because retirements and batters crossing on a catch break pure derivation.'
+      required:
+        - striker
+        - nonStriker
+        - bowler
+        - runsOffBat
+      properties:
+        over:
+          type: integer
+          minimum: 0
+          readOnly: true
+          description: 0-based over index, server-assigned from the legal-ball sequence.
+        ballInOver:
+          type: integer
+          minimum: 1
+          maximum: 6
+          readOnly: true
+          description: Legal-ball position within the over, server-assigned.
+        striker:
+          type: string
+          description: Lineup name facing the ball.
+        nonStriker:
+          type: string
+          description: Lineup name at the non-striker's end.
+        bowler:
+          type: string
+          description: Lineup name bowling.
+        runsOffBat:
+          type: integer
+          minimum: 0
+          maximum: 8
+          description: Runs credited to the striker (overthrows allowed, hence up to 8).
+        extras:
+          oneOf:
+            - $ref: '#/components/schemas/CricketExtras'
+            - type: 'null'
+        wicket:
+          oneOf:
+            - $ref: '#/components/schemas/CricketWicket'
+            - type: 'null'
+        isLegal:
+          type: boolean
+          readOnly: true
+          description: Server-derived — false iff `extras.type` is WIDE or NO_BALL.
+        enteredAt:
+          allOf:
+            - $ref: '#/components/schemas/Timestamp'
+          readOnly: true
+    CricketInningsData:
+      type: object
+      description: Raw facts for one innings, in order of play. Exactly one of `totals` / `overSummaries` / `deliveries` is authoritative depending on `detailLevel` (MATCH / OVER / BALL respectively); for OVER and BALL innings the totals are server-derived and never stored here.
+      required:
+        - seq
+        - battingTeam
+        - detailLevel
+      properties:
+        seq:
+          type: integer
+          minimum: 1
+          description: 1-based order of play; must be contiguous from 1 across the match.
+        battingTeam:
+          type: string
+          enum:
+            - HOME
+            - AWAY
+        detailLevel:
+          $ref: '#/components/schemas/CricketDetailLevel'
+        state:
+          type: string
+          enum:
+            - IN_PROGRESS
+            - COMPLETED
+            - DECLARED
+          default: IN_PROGRESS
+        totals:
+          oneOf:
+            - type: object
+              required:
+                - runs
+              properties:
+                runs:
+                  type: integer
+                  minimum: 0
+                wickets:
+                  type: integer
+                  minimum: 0
+                  maximum: 10
+                overs:
+                  type:
+                    - number
+                    - 'null'
+                  description: X.Y with Y in 0..5 (balls), or total balls for HUNDRED.
+            - type: 'null'
+          description: Authoritative only when `detailLevel` is MATCH.
+        overSummaries:
+          type: array
+          description: OVER-level innings only.
+          items:
+            $ref: '#/components/schemas/CricketOverSummary'
+        deliveries:
+          type: array
+          description: BALL-level innings only, in delivery order.
+          items:
+            $ref: '#/components/schemas/CricketDelivery'
+        currentState:
+          oneOf:
+            - type: object
+              properties:
+                striker:
+                  type: string
+                nonStriker:
+                  type: string
+                bowler:
+                  type: string
+            - type: 'null'
+          description: Live-entry crease pointer for a BALL-level innings in progress; lets the admin ball pad re-hydrate exactly after a refresh or a 409.
+        followOn:
+          type: boolean
+          default: false
+          description: TEST only.
+    CricketMatchData:
+      type: object
+      description: Raw cricket entry data for one match (admin read-back). This plus the Match document is the complete user-entered fact set — the server derives every public display surface (summary card, scorecard, commentary, analysis, live) from it on each write; nothing derived is stored here. A cricket match with no CricketMatchData document is implicitly MATCH-level, sourced from `Match.details`.
+      required:
+        - matchSlug
+        - format
+        - innings
+      properties:
+        matchSlug:
+          type: string
+          readOnly: true
+        format:
+          allOf:
+            - $ref: '#/components/schemas/CricketFormat'
+          description: Required here — null is not allowed once cricket data exists.
+        oversLimit:
+          type:
+            - integer
+            - 'null'
+          description: Per-innings limit. Defaults by format (T20=20, OD=50, T10=10, TEST=null, HUNDRED=100 *balls*); admin-overridable for rain-shortened matches.
+        toss:
+          oneOf:
+            - type: object
+              required:
+                - wonBy
+                - decision
+              properties:
+                wonBy:
+                  type: string
+                  enum:
+                    - HOME
+                    - AWAY
+                decision:
+                  type: string
+                  enum:
+                    - BAT
+                    - BOWL
+            - type: 'null'
+        playerOfMatch:
+          type:
+            - string
+            - 'null'
+          description: Admin judgment call (not derivable). When null the server derives it from the MVP totals.
+        resultNote:
+          type:
+            - string
+            - 'null'
+          description: Optional result-label override (e.g. "Match abandoned").
+        innings:
+          type: array
+          items:
+            $ref: '#/components/schemas/CricketInningsData'
+        createdAt:
+          allOf:
+            - $ref: '#/components/schemas/Timestamp'
+          readOnly: true
+        updatedAt:
+          allOf:
+            - $ref: '#/components/schemas/Timestamp'
+          readOnly: true
+          description: Editors compare this against their loaded copy to warn about concurrent edits before a bulk PUT (last writer wins).
+    CricketLiveTeam:
+      type: object
+      properties:
+        name:
+          type: string
+        score:
+          type: string
+        overs:
+          type: string
+        batFirst:
+          type: boolean
+    CricketLiveBatter:
+      type: object
+      properties:
+        name:
+          type: string
+        onStrike:
+          type: boolean
+        runs:
+          type: integer
+        balls:
+          type: integer
+    CricketLiveBowler:
+      type: object
+      properties:
+        name:
+          type: string
+        overs:
+          type: number
+        maidens:
+          type: integer
+        runs:
+          type: integer
+        wickets:
+          type: integer
+    CricketLive:
+      type: object
+      properties:
+        slug:
+          type: string
+        status:
+          type: string
+          example: LIVE
+        homeTeam:
+          $ref: '#/components/schemas/CricketLiveTeam'
+        awayTeam:
+          $ref: '#/components/schemas/CricketLiveTeam'
+        target:
+          type:
+            - integer
+            - 'null'
+          description: Null in 1st innings.
+        required:
+          oneOf:
+            - type: object
+              properties:
+                runs:
+                  type: integer
+                balls:
+                  type: integer
+                runRate:
+                  type: number
+            - type: 'null'
+          description: Null in 1st innings.
+        currentBatters:
+          type: array
+          items:
+            $ref: '#/components/schemas/CricketLiveBatter'
+        currentBowler:
+          $ref: '#/components/schemas/CricketLiveBowler'
+        lastBalls:
+          type: array
+          description: Most recent over, newest right.
+          items:
+            type: string
+        lastUpdated:
+          type: string
+          format: date-time
+    CricketMatchDataResponse:
+      type: object
+      description: Envelope returned by the cricket-data GET / PUT / PATCH operations. `live` is the fresh server-derived live snapshot (null unless the match is LIVE) — the admin editor re-syncs its pad state from it after every write, keeping the server authoritative.
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/CricketMatchData'
+        live:
+          oneOf:
+            - $ref: '#/components/schemas/CricketLive'
+            - type: 'null'
+    CricketMatchDataInput:
+      type: object
+      description: Create-or-replace payload for a match's raw cricket data (PUT). Full replacement, not a merge. Raw facts only — never send server-assigned fields (`over`, `ballInOver`, `isLegal`, `enteredAt`, timestamps) or any derived value. Used by the admin match setup, the over-by-over save, and the CSV importer.
+      required:
+        - format
+        - innings
+      properties:
+        format:
+          allOf:
+            - $ref: '#/components/schemas/CricketFormat'
+          description: Required; null not allowed.
+        oversLimit:
+          type:
+            - integer
+            - 'null'
+          description: Omit/null for format default; set for rain-shortened matches.
+        toss:
+          oneOf:
+            - type: object
+              required:
+                - wonBy
+                - decision
+              properties:
+                wonBy:
+                  type: string
+                  enum:
+                    - HOME
+                    - AWAY
+                decision:
+                  type: string
+                  enum:
+                    - BAT
+                    - BOWL
+            - type: 'null'
+        playerOfMatch:
+          type:
+            - string
+            - 'null'
+        resultNote:
+          type:
+            - string
+            - 'null'
+        innings:
+          type: array
+          description: '`seq` must be contiguous from 1. Player names must resolve against the match lineups — unresolvable names are rejected (400) for BALL-level innings and reported as warnings for OVER-level.'
+          items:
+            $ref: '#/components/schemas/CricketInningsData'
+    CricketBallInput:
+      type: object
+      description: 'Append one delivery to a BALL-level innings. `expectedBallCount` is the client''s count of deliveries already stored for that innings — the optimistic concurrency guard: a mismatch returns 409 with the server''s authoritative count and the client re-hydrates. `nextState` is the client''s suggested crease state after this ball (strike rotation applied); the server stores it as the innings'' `currentState`.'
+      required:
+        - inningsSeq
+        - expectedBallCount
+        - striker
+        - nonStriker
+        - bowler
+        - runsOffBat
+      properties:
+        inningsSeq:
+          type: integer
+          minimum: 1
+        expectedBallCount:
+          type: integer
+          minimum: 0
+        striker:
+          type: string
+        nonStriker:
+          type: string
+        bowler:
+          type: string
+        runsOffBat:
+          type: integer
+          minimum: 0
+          maximum: 8
+        extras:
+          oneOf:
+            - $ref: '#/components/schemas/CricketExtras'
+            - type: 'null'
+        wicket:
+          oneOf:
+            - $ref: '#/components/schemas/CricketWicket'
+            - type: 'null'
+        nextState:
+          oneOf:
+            - type: object
+              properties:
+                striker:
+                  type: string
+                nonStriker:
+                  type: string
+                bowler:
+                  type: string
+            - type: 'null'
+    CricketBallResponse:
+      type: object
+      description: Result of a ball append/undo. `ballCount` is the innings' authoritative delivery count after the operation — the client's next `expectedBallCount`.
+      required:
+        - ballCount
+      properties:
+        ballCount:
+          type: integer
+          minimum: 0
+        live:
+          oneOf:
+            - $ref: '#/components/schemas/CricketLive'
+            - type: 'null'
+          description: Fresh server-derived snapshot to reconcile the pad against.
+    CricketBallConflict:
+      type: object
+      description: 'Optimistic-concurrency conflict (409): the innings'' delivery count moved since the client last synced — another editor tab or a double-tap. The client must re-hydrate via `GET …/cricket-data` and retry from the returned state; nothing was written.'
+      required:
+        - error
+        - ballCount
+      properties:
+        error:
+          type: string
+          example: Ball count mismatch
+        ballCount:
+          type: integer
+          description: The server's authoritative delivery count for the innings.
+    CricketStatePatch:
+      type: object
+      description: Partial live-state update; send any subset of the fields. `matchStatus` transitions the parent Match (COMPLETED finalises the result label and schedules live-snapshot eviction). `startInnings` appends the next innings; `closeInnings` marks one COMPLETED or DECLARED; `currentState` repoints the crease of the innings currently in progress. Every accepted patch re-derives the display surfaces and busts the public cricket caches.
+      properties:
+        toss:
+          oneOf:
+            - type: object
+              required:
+                - wonBy
+                - decision
+              properties:
+                wonBy:
+                  type: string
+                  enum:
+                    - HOME
+                    - AWAY
+                decision:
+                  type: string
+                  enum:
+                    - BAT
+                    - BOWL
+            - type: 'null'
+        playerOfMatch:
+          type:
+            - string
+            - 'null'
+        resultNote:
+          type:
+            - string
+            - 'null'
+        matchStatus:
+          $ref: '#/components/schemas/MatchStatus'
+        startInnings:
+          type: object
+          required:
+            - battingTeam
+            - detailLevel
+          properties:
+            battingTeam:
+              type: string
+              enum:
+                - HOME
+                - AWAY
+            detailLevel:
+              $ref: '#/components/schemas/CricketDetailLevel'
+            striker:
+              type: string
+              description: Opening batter on strike (BALL level).
+            nonStriker:
+              type: string
+            bowler:
+              type: string
+              description: Opening bowler (BALL level).
+        closeInnings:
+          type: object
+          required:
+            - seq
+            - state
+          properties:
+            seq:
+              type: integer
+              minimum: 1
+            state:
+              type: string
+              enum:
+                - COMPLETED
+                - DECLARED
+        currentState:
+          type: object
+          description: Applies to the innings currently IN_PROGRESS.
+          properties:
+            striker:
+              type: string
+            nonStriker:
+              type: string
+            bowler:
+              type: string
+    CricketUploadResult:
+      type: object
+      description: Cricket CSV import summary. Same row-error contract as the schedule importer (`errors[].row` is the spreadsheet row number).
+      required:
+        - imported
+        - skipped
+        - errors
+      properties:
+        imported:
+          type: object
+          properties:
+            innings:
+              type: integer
+            overs:
+              type: integer
+            balls:
+              type: integer
+        skipped:
+          type: integer
         errors:
           type: array
           items:
@@ -6814,6 +7656,20 @@ components:
           description: Pre-formatted display string.
         to:
           type: string
+    CricketAvailableTabs:
+      type: object
+      description: Server-derived flags telling the scoreboard which detail tabs have data at this match's entry detail level (BALL ⇒ all true; OVER ⇒ analysis only; MATCH ⇒ all false). Clients hide tabs whose flag is false. Older payloads may omit the whole object — clients then fall back to hiding tabs whose arrays are empty.
+      properties:
+        scorecard:
+          type: boolean
+        commentary:
+          type: boolean
+        analysis:
+          type: boolean
+        heroes:
+          type: boolean
+        mvp:
+          type: boolean
     CricketMatchDetail:
       type: object
       description: Full scorecard page. startTime/matchDate/lastUpdated and innings[].from/to are pre-formatted display strings rendered verbatim. videoEmbedUrl must be empty or a youtube.com / player.vimeo.com URL.
@@ -6903,84 +7759,8 @@ components:
           description: Display string.
         lastUpdatedBy:
           type: string
-    CricketLiveTeam:
-      type: object
-      properties:
-        name:
-          type: string
-        score:
-          type: string
-        overs:
-          type: string
-        batFirst:
-          type: boolean
-    CricketLiveBatter:
-      type: object
-      properties:
-        name:
-          type: string
-        onStrike:
-          type: boolean
-        runs:
-          type: integer
-        balls:
-          type: integer
-    CricketLiveBowler:
-      type: object
-      properties:
-        name:
-          type: string
-        overs:
-          type: number
-        maidens:
-          type: integer
-        runs:
-          type: integer
-        wickets:
-          type: integer
-    CricketLive:
-      type: object
-      properties:
-        slug:
-          type: string
-        status:
-          type: string
-          example: LIVE
-        homeTeam:
-          $ref: '#/components/schemas/CricketLiveTeam'
-        awayTeam:
-          $ref: '#/components/schemas/CricketLiveTeam'
-        target:
-          type:
-            - integer
-            - 'null'
-          description: Null in 1st innings.
-        required:
-          oneOf:
-            - type: object
-              properties:
-                runs:
-                  type: integer
-                balls:
-                  type: integer
-                runRate:
-                  type: number
-            - type: 'null'
-          description: Null in 1st innings.
-        currentBatters:
-          type: array
-          items:
-            $ref: '#/components/schemas/CricketLiveBatter'
-        currentBowler:
-          $ref: '#/components/schemas/CricketLiveBowler'
-        lastBalls:
-          type: array
-          description: Most recent over, newest right.
-          items:
-            type: string
-        lastUpdated:
-          type: string
-          format: date-time
+        available:
+          $ref: '#/components/schemas/CricketAvailableTabs'
     RugbyScoreboardScorer:
       type: object
       properties:

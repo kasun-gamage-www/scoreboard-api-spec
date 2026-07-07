@@ -9,6 +9,19 @@ additionalProperties: true
 properties:
   cricketFormat:
     $ref: ./CricketFormat.yaml
+  cricketBatFirst:
+    type:
+      - string
+      - 'null'
+    enum:
+      - HOME
+      - AWAY
+      - null
+    description: >-
+      Which side batted first — a raw fact needed to derive the result label
+      ("won by N runs" vs "won by M wickets") for matches entered as totals
+      only. For matches with ball/over-level cricket data the toss stored
+      there takes precedence.
   homeInn1Runs:
     type:
       - number

@@ -1,0 +1,72 @@
+type: object
+description: >-
+  Raw cricket entry data for one match (admin read-back). This plus the Match
+  document is the complete user-entered fact set — the server derives every
+  public display surface (summary card, scorecard, commentary, analysis, live)
+  from it on each write; nothing derived is stored here. A cricket match with
+  no CricketMatchData document is implicitly MATCH-level, sourced from
+  `Match.details`.
+required:
+  - matchSlug
+  - format
+  - innings
+properties:
+  matchSlug:
+    type: string
+    readOnly: true
+  format:
+    allOf:
+      - $ref: ./CricketFormat.yaml
+    description: Required here — null is not allowed once cricket data exists.
+  oversLimit:
+    type:
+      - integer
+      - 'null'
+    description: >-
+      Per-innings limit. Defaults by format (T20=20, OD=50, T10=10, TEST=null,
+      HUNDRED=100 *balls*); admin-overridable for rain-shortened matches.
+  toss:
+    oneOf:
+      - type: object
+        required:
+          - wonBy
+          - decision
+        properties:
+          wonBy:
+            type: string
+            enum:
+              - HOME
+              - AWAY
+          decision:
+            type: string
+            enum:
+              - BAT
+              - BOWL
+      - type: 'null'
+  playerOfMatch:
+    type:
+      - string
+      - 'null'
+    description: >-
+      Admin judgment call (not derivable). When null the server derives it from
+      the MVP totals.
+  resultNote:
+    type:
+      - string
+      - 'null'
+    description: Optional result-label override (e.g. "Match abandoned").
+  innings:
+    type: array
+    items:
+      $ref: ./CricketInningsData.yaml
+  createdAt:
+    allOf:
+      - $ref: ./Timestamp.yaml
+    readOnly: true
+  updatedAt:
+    allOf:
+      - $ref: ./Timestamp.yaml
+    readOnly: true
+    description: >-
+      Editors compare this against their loaded copy to warn about concurrent
+      edits before a bulk PUT (last writer wins).

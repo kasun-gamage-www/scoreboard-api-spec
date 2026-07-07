@@ -1,0 +1,59 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+delete:
+  tags:
+    - Cricket Input
+  operationId: cricketDataUndoBall
+  security:
+    - firebaseAuth: []
+  summary: Undo the most recent delivery of an innings
+  description: >-
+    Pops the innings' last delivery, re-derives all display surfaces and
+    updates the live snapshot — a wicket undo restores the batter, an
+    over-boundary undo restores the previous over. Guarded by the same
+    optimistic-concurrency check as append (`expected` = the client's current
+    delivery count).
+  parameters:
+    - name: innings
+      in: query
+      required: true
+      description: Innings `seq` to undo from.
+      schema:
+        type: integer
+        minimum: 1
+    - name: expected
+      in: query
+      required: true
+      description: Client's current delivery count for the innings.
+      schema:
+        type: integer
+        minimum: 1
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '200':
+      description: Ball removed.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CricketBallResponse.yaml
+    '400':
+      description: Nothing to undo, or validation error.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+    '404':
+      description: Match unknown or has no cricket data / no such innings.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+    '409':
+      description: Stale `expected` count — re-hydrate and retry.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CricketBallConflict.yaml

@@ -1,0 +1,74 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+get:
+  tags:
+    - Cricket Input
+  operationId: cricketDataGet
+  security:
+    - firebaseAuth: []
+  summary: Fetch a match's raw cricket entry data (hydrates the score editor)
+  description: >-
+    Returns the stored raw facts plus the current server-derived live snapshot.
+    404 when the match is unknown — or exists but has no cricket data yet
+    (implicitly MATCH-level; the editor then offers match setup).
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '200':
+      description: Raw cricket data + live snapshot.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CricketMatchDataResponse.yaml
+    '404':
+      description: Match unknown, not a cricket match, or no cricket data yet.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: No cricket data for this match
+put:
+  tags:
+    - Cricket Input
+  operationId: cricketDataReplace
+  security:
+    - firebaseAuth: []
+  summary: Create or fully replace a match's raw cricket data
+  description: >-
+    Full replacement, not a merge — used by the admin match setup, the
+    over-by-over save and the CSV importer. On every accepted write the server
+    re-derives all display surfaces (summary card, scorecard, commentary,
+    analysis, live), mirrors innings totals onto `Match.details`, updates the
+    in-memory live snapshot and busts the public cricket caches before
+    responding. Impossible states (an 11th wicket, a name not in the lineup on
+    a BALL-level innings, non-contiguous innings `seq`) are rejected with 400.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CricketMatchDataInput.yaml
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '200':
+      description: Stored data + fresh live snapshot.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CricketMatchDataResponse.yaml
+    '400':
+      description: Validation or derivation error (impossible state).
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: 'innings 1: wicket 11 is impossible'
+    '404':
+      $ref: ../components/responses/NotFoundMatch.yaml

@@ -1,0 +1,55 @@
+type: object
+description: >-
+  One delivery — raw facts only. `over`, `ballInOver`, `isLegal` and
+  `enteredAt` are server-assigned from the delivery sequence and are read-only
+  (never sent by clients). Striker/non-striker are raw facts: the admin UI
+  suggests strike rotation (odd runs, end of over) but the server stores what
+  was sent, because retirements and batters crossing on a catch break pure
+  derivation.
+required:
+  - striker
+  - nonStriker
+  - bowler
+  - runsOffBat
+properties:
+  over:
+    type: integer
+    minimum: 0
+    readOnly: true
+    description: 0-based over index, server-assigned from the legal-ball sequence.
+  ballInOver:
+    type: integer
+    minimum: 1
+    maximum: 6
+    readOnly: true
+    description: Legal-ball position within the over, server-assigned.
+  striker:
+    type: string
+    description: Lineup name facing the ball.
+  nonStriker:
+    type: string
+    description: Lineup name at the non-striker's end.
+  bowler:
+    type: string
+    description: Lineup name bowling.
+  runsOffBat:
+    type: integer
+    minimum: 0
+    maximum: 8
+    description: Runs credited to the striker (overthrows allowed, hence up to 8).
+  extras:
+    oneOf:
+      - $ref: ./CricketExtras.yaml
+      - type: 'null'
+  wicket:
+    oneOf:
+      - $ref: ./CricketWicket.yaml
+      - type: 'null'
+  isLegal:
+    type: boolean
+    readOnly: true
+    description: Server-derived — false iff `extras.type` is WIDE or NO_BALL.
+  enteredAt:
+    allOf:
+      - $ref: ./Timestamp.yaml
+    readOnly: true

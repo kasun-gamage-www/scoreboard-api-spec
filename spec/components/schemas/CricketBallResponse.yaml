@@ -1,0 +1,15 @@
+type: object
+description: >-
+  Result of a ball append/undo. `ballCount` is the innings' authoritative
+  delivery count after the operation — the client's next `expectedBallCount`.
+required:
+  - ballCount
+properties:
+  ballCount:
+    type: integer
+    minimum: 0
+  live:
+    oneOf:
+      - $ref: ./CricketLive.yaml
+      - type: 'null'
+    description: Fresh server-derived snapshot to reconcile the pad against.

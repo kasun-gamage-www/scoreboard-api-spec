@@ -1,0 +1,18 @@
+type: object
+description: >-
+  Server-derived flags telling the scoreboard which detail tabs have data at
+  this match's entry detail level (BALL ⇒ all true; OVER ⇒ analysis only;
+  MATCH ⇒ all false). Clients hide tabs whose flag is false. Older payloads may
+  omit the whole object — clients then fall back to hiding tabs whose arrays
+  are empty.
+properties:
+  scorecard:
+    type: boolean
+  commentary:
+    type: boolean
+  analysis:
+    type: boolean
+  heroes:
+    type: boolean
+  mvp:
+    type: boolean

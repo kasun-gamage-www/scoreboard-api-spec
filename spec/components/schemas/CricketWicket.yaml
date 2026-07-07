@@ -1,0 +1,32 @@
+type: object
+description: >-
+  Dismissal recorded on one delivery. `playerOut` is a lineup name — usually
+  the striker, but may be the non-striker (run-outs). RETIRED_HURT does not
+  count towards the ten-wicket limit.
+required:
+  - type
+  - playerOut
+properties:
+  type:
+    type: string
+    enum:
+      - BOWLED
+      - CAUGHT
+      - LBW
+      - RUN_OUT
+      - STUMPED
+      - HIT_WICKET
+      - RETIRED_HURT
+      - RETIRED_OUT
+      - OBSTRUCTING_FIELD
+      - TIMED_OUT
+  playerOut:
+    type: string
+    description: Lineup name of the dismissed batter.
+  fielder:
+    type:
+      - string
+      - 'null'
+    description: >-
+      Catcher / thrower / stumper for CAUGHT, RUN_OUT and STUMPED; null
+      otherwise.

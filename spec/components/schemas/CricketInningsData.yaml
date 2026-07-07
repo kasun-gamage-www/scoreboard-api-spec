@@ -1,0 +1,77 @@
+type: object
+description: >-
+  Raw facts for one innings, in order of play. Exactly one of `totals` /
+  `overSummaries` / `deliveries` is authoritative depending on `detailLevel`
+  (MATCH / OVER / BALL respectively); for OVER and BALL innings the totals are
+  server-derived and never stored here.
+required:
+  - seq
+  - battingTeam
+  - detailLevel
+properties:
+  seq:
+    type: integer
+    minimum: 1
+    description: 1-based order of play; must be contiguous from 1 across the match.
+  battingTeam:
+    type: string
+    enum:
+      - HOME
+      - AWAY
+  detailLevel:
+    $ref: ./CricketDetailLevel.yaml
+  state:
+    type: string
+    enum:
+      - IN_PROGRESS
+      - COMPLETED
+      - DECLARED
+    default: IN_PROGRESS
+  totals:
+    oneOf:
+      - type: object
+        required:
+          - runs
+        properties:
+          runs:
+            type: integer
+            minimum: 0
+          wickets:
+            type: integer
+            minimum: 0
+            maximum: 10
+          overs:
+            type:
+              - number
+              - 'null'
+            description: X.Y with Y in 0..5 (balls), or total balls for HUNDRED.
+      - type: 'null'
+    description: Authoritative only when `detailLevel` is MATCH.
+  overSummaries:
+    type: array
+    description: OVER-level innings only.
+    items:
+      $ref: ./CricketOverSummary.yaml
+  deliveries:
+    type: array
+    description: BALL-level innings only, in delivery order.
+    items:
+      $ref: ./CricketDelivery.yaml
+  currentState:
+    oneOf:
+      - type: object
+        properties:
+          striker:
+            type: string
+          nonStriker:
+            type: string
+          bowler:
+            type: string
+      - type: 'null'
+    description: >-
+      Live-entry crease pointer for a BALL-level innings in progress; lets the
+      admin ball pad re-hydrate exactly after a refresh or a 409.
+  followOn:
+    type: boolean
+    default: false
+    description: TEST only.

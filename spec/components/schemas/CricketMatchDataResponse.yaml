@@ -1,0 +1,15 @@
+type: object
+description: >-
+  Envelope returned by the cricket-data GET / PUT / PATCH operations. `live` is
+  the fresh server-derived live snapshot (null unless the match is LIVE) — the
+  admin editor re-syncs its pad state from it after every write, keeping the
+  server authoritative.
+required:
+  - data
+properties:
+  data:
+    $ref: ./CricketMatchData.yaml
+  live:
+    oneOf:
+      - $ref: ./CricketLive.yaml
+      - type: 'null'

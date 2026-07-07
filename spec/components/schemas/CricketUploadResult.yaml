@@ -1,0 +1,24 @@
+type: object
+description: >-
+  Cricket CSV import summary. Same row-error contract as the schedule importer
+  (`errors[].row` is the spreadsheet row number).
+required:
+  - imported
+  - skipped
+  - errors
+properties:
+  imported:
+    type: object
+    properties:
+      innings:
+        type: integer
+      overs:
+        type: integer
+      balls:
+        type: integer
+  skipped:
+    type: integer
+  errors:
+    type: array
+    items:
+      $ref: ./ScheduleRowError.yaml

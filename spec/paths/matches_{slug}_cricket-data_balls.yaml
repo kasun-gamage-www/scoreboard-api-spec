@@ -1,0 +1,52 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+post:
+  tags:
+    - Cricket Input
+  operationId: cricketDataAppendBall
+  security:
+    - firebaseAuth: []
+  summary: Append one delivery (live ball-by-ball entry)
+  description: >-
+    Appends to the innings' delivery sequence. The server assigns
+    `over`/`ballInOver` from the count of legal balls, computes `isLegal`,
+    persists before acknowledging, re-derives all display surfaces and updates
+    the in-memory live snapshot synchronously — guest `/match/cricket/{slug}/live`
+    polls see the ball immediately. Optimistic concurrency: `expectedBallCount`
+    must equal the server's current delivery count for the innings, else 409
+    and nothing is written.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CricketBallInput.yaml
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '200':
+      description: Ball stored.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CricketBallResponse.yaml
+    '400':
+      description: Validation or derivation error.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+    '404':
+      description: Match unknown or has no cricket data / no such innings.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+    '409':
+      description: Stale `expectedBallCount` — re-hydrate and retry.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CricketBallConflict.yaml
