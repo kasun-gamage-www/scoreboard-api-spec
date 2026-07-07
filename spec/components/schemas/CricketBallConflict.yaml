@@ -1,0 +1,16 @@
+type: object
+description: >-
+  Optimistic-concurrency conflict (409): the innings' delivery count moved
+  since the client last synced — another editor tab or a double-tap. The
+  client must re-hydrate via `GET …/cricket-data` and retry from the returned
+  state; nothing was written.
+required:
+  - error
+  - ballCount
+properties:
+  error:
+    type: string
+    example: Ball count mismatch
+  ballCount:
+    type: integer
+    description: The server's authoritative delivery count for the innings.

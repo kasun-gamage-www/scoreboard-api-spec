@@ -1,0 +1,23 @@
+type: object
+description: Per-over totals for an OVER-level innings.
+required:
+  - over
+  - runs
+properties:
+  over:
+    type: integer
+    minimum: 1
+    description: 1-based over number.
+  runs:
+    type: integer
+    minimum: 0
+  wickets:
+    type: integer
+    minimum: 0
+    maximum: 10
+    default: 0
+  bowler:
+    type:
+      - string
+      - 'null'
+    description: Optional lineup name; enables per-bowler attribution in analysis.

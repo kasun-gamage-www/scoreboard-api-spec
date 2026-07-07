@@ -1,0 +1,41 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+patch:
+  tags:
+    - Cricket Input
+  operationId: cricketDataPatchState
+  security:
+    - firebaseAuth: []
+  summary: Patch match/innings live state (toss, status, innings lifecycle, crease)
+  description: >-
+    Send any subset of the patch fields — set the toss, start or close an
+    innings, repoint the crease, name the player of the match, or transition
+    the parent Match status (LIVE to start, COMPLETED to finalise; COMPLETED
+    also produces the derived result label and schedules live-snapshot
+    eviction). Every accepted patch re-derives the display surfaces and busts
+    the public cricket caches.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CricketStatePatch.yaml
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '200':
+      description: Updated data + fresh live snapshot.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CricketMatchDataResponse.yaml
+    '400':
+      description: Validation or derivation error.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+    '404':
+      $ref: ../components/responses/NotFoundMatch.yaml

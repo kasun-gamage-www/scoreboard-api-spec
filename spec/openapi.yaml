@@ -173,6 +173,12 @@ tags:
     description: Non-match calendar items (training, ceremonies, etc.).
   - name: Matches
     description: Generic cross-sport match resource (CRUD, featured flag, bulk import).
+  - name: Cricket Input
+    description: >-
+      Admin write surface for raw cricket match data at three detail levels —
+      ball-by-ball, over-by-over, or match totals. Only raw facts are
+      accepted; the server derives everything displayed (scorecards,
+      commentary, analysis, live snapshots, summary cards) on every write.
   - name: Polls
     description: Public reader polls + admin authoring.
   - name: Cricket Display
@@ -312,6 +318,16 @@ paths:
     $ref: paths/matches_{slug}_featured.yaml
   /matches/upload-schedule:
     $ref: paths/matches_upload-schedule.yaml
+  /matches/{slug}/cricket-data:
+    $ref: 'paths/matches_{slug}_cricket-data.yaml'
+  /matches/{slug}/cricket-data/balls:
+    $ref: 'paths/matches_{slug}_cricket-data_balls.yaml'
+  /matches/{slug}/cricket-data/balls/last:
+    $ref: 'paths/matches_{slug}_cricket-data_balls_last.yaml'
+  /matches/{slug}/cricket-data/state:
+    $ref: 'paths/matches_{slug}_cricket-data_state.yaml'
+  /matches/{slug}/cricket-data/upload:
+    $ref: 'paths/matches_{slug}_cricket-data_upload.yaml'
   /polls:
     $ref: paths/polls.yaml
   /polls/{id}:

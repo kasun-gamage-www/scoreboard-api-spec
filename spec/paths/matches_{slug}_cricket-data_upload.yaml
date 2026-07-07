@@ -1,0 +1,75 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+post:
+  tags:
+    - Cricket Input
+  operationId: cricketDataUpload
+  security:
+    - firebaseAuth: []
+  summary: Import a match's cricket data from CSV / Excel (single template)
+  description: >-
+    Admin-only. One template covers finished and ongoing matches at all three
+    detail levels. Fixed header: `rowType,key,value,innings,battingTeam,over,
+    ball,striker,nonStriker,bowler,runsOffBat,extraType,extraRuns,wicketType,
+    playerOut,fielder,runs,wickets,overs`. Row kinds: META (key/value pairs —
+    format, status, tossWonBy, tossDecision, batFirst, playerOfMatch,
+    resultNote), PLAYER (adds lineup players missing from the match), INNINGS
+    (one per innings, declares order; totals required only when the innings has
+    no OVER/BALL rows), OVER (per-over totals) and BALL (one delivery; file
+    order wins over the over/ball columns — the server re-numbers). Detail
+    level is inferred per innings: BALL rows ⇒ BALL, else OVER rows ⇒ OVER,
+    else MATCH from the INNINGS totals. `META status=LIVE` marks an ongoing
+    match — unclosed innings stay IN_PROGRESS and the crease state is seeded
+    from the last BALL row, so the admin ball pad resumes exactly where the
+    file left off. The parsed result funnels through the same pipeline as
+    `PUT …/cricket-data` (validation, derivation, mirroring, cache busting).
+    Row errors follow the schedule importer's contract; 422 when nothing
+    imports. The file is capped at 10 MB (413 beyond that).
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required:
+            - file
+          properties:
+            file:
+              type: string
+              format: binary
+              description: CSV or Excel file (.csv, .xls, .xlsx).
+  responses:
+    '401':
+      $ref: ../components/responses/Unauthorized.yaml
+    '403':
+      $ref: ../components/responses/Forbidden.yaml
+    '200':
+      description: Import summary.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CricketUploadResult.yaml
+    '400':
+      description: No file uploaded.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: No file uploaded
+    '404':
+      $ref: ../components/responses/NotFoundMatch.yaml
+    '413':
+      description: File exceeds the 10 MB upload cap.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml
+          example:
+            error: File too large
+    '422':
+      description: All rows failed validation.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ScheduleUploadFailure.yaml

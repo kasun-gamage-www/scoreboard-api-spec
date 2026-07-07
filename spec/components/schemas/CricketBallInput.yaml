@@ -1,0 +1,51 @@
+type: object
+description: >-
+  Append one delivery to a BALL-level innings. `expectedBallCount` is the
+  client's count of deliveries already stored for that innings — the optimistic
+  concurrency guard: a mismatch returns 409 with the server's authoritative
+  count and the client re-hydrates. `nextState` is the client's suggested
+  crease state after this ball (strike rotation applied); the server stores it
+  as the innings' `currentState`.
+required:
+  - inningsSeq
+  - expectedBallCount
+  - striker
+  - nonStriker
+  - bowler
+  - runsOffBat
+properties:
+  inningsSeq:
+    type: integer
+    minimum: 1
+  expectedBallCount:
+    type: integer
+    minimum: 0
+  striker:
+    type: string
+  nonStriker:
+    type: string
+  bowler:
+    type: string
+  runsOffBat:
+    type: integer
+    minimum: 0
+    maximum: 8
+  extras:
+    oneOf:
+      - $ref: ./CricketExtras.yaml
+      - type: 'null'
+  wicket:
+    oneOf:
+      - $ref: ./CricketWicket.yaml
+      - type: 'null'
+  nextState:
+    oneOf:
+      - type: object
+        properties:
+          striker:
+            type: string
+          nonStriker:
+            type: string
+          bowler:
+            type: string
+      - type: 'null'

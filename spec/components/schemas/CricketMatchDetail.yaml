@@ -89,3 +89,5 @@ properties:
     description: Display string.
   lastUpdatedBy:
     type: string
+  available:
+    $ref: ./CricketAvailableTabs.yaml

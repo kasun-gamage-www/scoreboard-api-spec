@@ -1,0 +1,22 @@
+type: object
+description: >-
+  Extras conceded on one delivery. WIDE and NO_BALL are illegal deliveries and
+  do not advance the legal-ball count; `runs` is the total extras awarded on
+  the ball, including the mandatory 1 for WIDE/NO_BALL (a wide four is
+  `{type: WIDE, runs: 5}`). Byes/leg-byes off a no-ball are entered as
+  NO_BALL with the combined runs.
+required:
+  - type
+  - runs
+properties:
+  type:
+    type: string
+    enum:
+      - WIDE
+      - NO_BALL
+      - BYE
+      - LEG_BYE
+      - PENALTY
+  runs:
+    type: integer
+    minimum: 1

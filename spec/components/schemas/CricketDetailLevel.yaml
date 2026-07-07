@@ -1,0 +1,10 @@
+type: string
+description: >-
+  Granularity of the raw facts entered for an innings. BALL innings carry every
+  delivery; OVER innings carry per-over totals; MATCH innings carry only final
+  totals. Different innings of the same match may use different levels — admins
+  enter what they have.
+enum:
+  - MATCH
+  - OVER
+  - BALL

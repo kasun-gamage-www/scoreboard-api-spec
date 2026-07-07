@@ -1,0 +1,82 @@
+type: object
+description: >-
+  Partial live-state update; send any subset of the fields. `matchStatus`
+  transitions the parent Match (COMPLETED finalises the result label and
+  schedules live-snapshot eviction). `startInnings` appends the next innings;
+  `closeInnings` marks one COMPLETED or DECLARED; `currentState` repoints the
+  crease of the innings currently in progress. Every accepted patch re-derives
+  the display surfaces and busts the public cricket caches.
+properties:
+  toss:
+    oneOf:
+      - type: object
+        required:
+          - wonBy
+          - decision
+        properties:
+          wonBy:
+            type: string
+            enum:
+              - HOME
+              - AWAY
+          decision:
+            type: string
+            enum:
+              - BAT
+              - BOWL
+      - type: 'null'
+  playerOfMatch:
+    type:
+      - string
+      - 'null'
+  resultNote:
+    type:
+      - string
+      - 'null'
+  matchStatus:
+    $ref: ./MatchStatus.yaml
+  startInnings:
+    type: object
+    required:
+      - battingTeam
+      - detailLevel
+    properties:
+      battingTeam:
+        type: string
+        enum:
+          - HOME
+          - AWAY
+      detailLevel:
+        $ref: ./CricketDetailLevel.yaml
+      striker:
+        type: string
+        description: Opening batter on strike (BALL level).
+      nonStriker:
+        type: string
+      bowler:
+        type: string
+        description: Opening bowler (BALL level).
+  closeInnings:
+    type: object
+    required:
+      - seq
+      - state
+    properties:
+      seq:
+        type: integer
+        minimum: 1
+      state:
+        type: string
+        enum:
+          - COMPLETED
+          - DECLARED
+  currentState:
+    type: object
+    description: Applies to the innings currently IN_PROGRESS.
+    properties:
+      striker:
+        type: string
+      nonStriker:
+        type: string
+      bowler:
+        type: string
