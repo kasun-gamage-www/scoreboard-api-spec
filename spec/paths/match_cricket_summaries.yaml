@@ -3,6 +3,11 @@ get:
     - Cricket Display
   operationId: cricketSummaries
   summary: Cricket summary cards (mixed past/live/upcoming)
+  description: >-
+    Served from a 30 s in-memory server cache (single-flight, busted on every
+    cricket write) with `Cache-Control: max-age=15`. Ordered LIVE first, then
+    RESULT newest-first / UPCOMING soonest-first. The home ticker fetches on
+    load and re-polls every 15 s only while a LIVE card is present.
   parameters:
     - name: limit
       in: query

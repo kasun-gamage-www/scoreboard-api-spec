@@ -5,7 +5,13 @@ get:
     - Cricket Display
   operationId: cricketLive
   summary: Lightweight live cricket score (poll/SSE)
-  description: 'Should set `Cache-Control: no-store`.'
+  description: >-
+    Always sets `Cache-Control: no-store`. Served write-through from an
+    in-memory map updated on every admin write — steady-state reads never touch
+    the database (a cold/post-restart miss reads the persisted snapshot once).
+    Clients poll every 5 s while the match is LIVE. The snapshot is evicted
+    ~5 min after the match completes, after which the endpoint returns 404 —
+    pollers treat that as the end of live coverage.
   responses:
     '200':
       description: Live cricket score.
@@ -13,3 +19,11 @@ get:
         application/json:
           schema:
             $ref: ../components/schemas/CricketLive.yaml
+    '404':
+      description: >-
+        No live snapshot — the match is not LIVE (or its post-completion
+        eviction window has passed). Polling clients stop on this.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Error.yaml

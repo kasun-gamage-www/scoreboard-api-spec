@@ -3,6 +3,12 @@ description: >-
   Full scorecard page. startTime/matchDate/lastUpdated and innings[].from/to are
   pre-formatted display strings rendered verbatim. videoEmbedUrl must be empty
   or a youtube.com / player.vimeo.com URL.
+
+  Provenance: every populated field is either an admin-entered raw fact or
+  derived from one by the server — nothing displayed is invented. Fields with
+  no admin input today (stage, city, rightsHolder, totalViews, liveViewers,
+  lastUpdatedBy, the innings timing blocks) are omitted or emitted empty;
+  clients must guard/fall back, and may not synthesize values for them.
 required:
   - slug
 properties:
@@ -12,6 +18,7 @@ properties:
     type: string
   seriesName:
     type: string
+    description: Currently the tournament slug (no separate series label exists).
   status:
     type: string
     enum:
@@ -20,10 +27,12 @@ properties:
       - Upcoming
   stage:
     type: string
+    description: Not admin-enterable; currently omitted.
   venue:
     type: string
   city:
     type: string
+    description: Not admin-enterable; currently omitted.
   location:
     type: string
     description: Display string.
@@ -71,17 +80,24 @@ properties:
       $ref: ./MvpPlayer.yaml
   videoEmbedUrl:
     type: string
-    description: Empty string when no video; else youtube/vimeo host only.
+    description: >-
+      Empty string when no video; else youtube/vimeo host only. No admin input
+      today, so always empty.
   streamTitle:
     type: string
+    description: Synthesized "{home} Vs {away}" label.
   rightsHolder:
     type: string
+    description: Not admin-enterable; currently omitted.
   totalViews:
     type: integer
+    description: No view tracking for matches yet; currently omitted.
   liveViewers:
     type: integer
+    description: No view tracking for matches yet; currently omitted.
   innings:
     type: array
+    description: Session timing blocks; not admin-enterable, emitted empty.
     items:
       $ref: ./CricketInningsTiming.yaml
   lastUpdated:
@@ -89,5 +105,6 @@ properties:
     description: Display string.
   lastUpdatedBy:
     type: string
+    description: Not admin-enterable; currently omitted.
   available:
     $ref: ./CricketAvailableTabs.yaml

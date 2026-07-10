@@ -5,6 +5,11 @@ get:
     - Cricket Display
   operationId: cricketMatchDetail
   summary: Full cricket match detail (scorecard, commentary, analysis, MVP)
+  description: >-
+    Served from a 10 s in-memory server cache (busted on every cricket write).
+    `Cache-Control: no-store` while the match is LIVE, else `max-age=60`.
+    Clients load once and, while LIVE, refresh every ~30 s (the 5 s cadence
+    belongs to the `/live` endpoint).
   responses:
     '200':
       description: Cricket match detail.

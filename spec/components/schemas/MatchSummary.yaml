@@ -11,13 +11,16 @@ properties:
     type: string
   embedSlug:
     type: string
+    description: Currently omitted for cricket; unused by the ticker.
   sport:
     type: string
   tournament:
     type: string
   tournamentLabel:
     type: string
-    description: Short code top-right; falls back to tournament.
+    description: >-
+      Short code top-right; falls back to tournament. Currently omitted for
+      cricket (clients render the fallback).
   status:
     type: string
     enum:

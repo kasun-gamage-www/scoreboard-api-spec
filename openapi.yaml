@@ -2876,6 +2876,7 @@ paths:
         - Cricket Display
       operationId: cricketSummaries
       summary: Cricket summary cards (mixed past/live/upcoming)
+      description: 'Served from a 30 s in-memory server cache (single-flight, busted on every cricket write) with `Cache-Control: max-age=15`. Ordered LIVE first, then RESULT newest-first / UPCOMING soonest-first. The home ticker fetches on load and re-polls every 15 s only while a LIVE card is present.'
       parameters:
         - name: limit
           in: query
@@ -2914,6 +2915,7 @@ paths:
         - Cricket Display
       operationId: cricketMatchDetail
       summary: Full cricket match detail (scorecard, commentary, analysis, MVP)
+      description: 'Served from a 10 s in-memory server cache (busted on every cricket write). `Cache-Control: no-store` while the match is LIVE, else `max-age=60`. Clients load once and, while LIVE, refresh every ~30 s (the 5 s cadence belongs to the `/live` endpoint).'
       responses:
         '200':
           description: Cricket match detail.
@@ -2931,7 +2933,7 @@ paths:
         - Cricket Display
       operationId: cricketLive
       summary: Lightweight live cricket score (poll/SSE)
-      description: 'Should set `Cache-Control: no-store`.'
+      description: 'Always sets `Cache-Control: no-store`. Served write-through from an in-memory map updated on every admin write — steady-state reads never touch the database (a cold/post-restart miss reads the persisted snapshot once). Clients poll every 5 s while the match is LIVE. The snapshot is evicted ~5 min after the match completes, after which the endpoint returns 404 — pollers treat that as the end of live coverage.'
       responses:
         '200':
           description: Live cricket score.
@@ -2939,6 +2941,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CricketLive'
+        '404':
+          description: No live snapshot — the match is not LIVE (or its post-completion eviction window has passed). Polling clients stop on this.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /match/list-rugby:
     get:
       tags:
@@ -7240,13 +7248,14 @@ components:
           type: string
         embedSlug:
           type: string
+          description: Currently omitted for cricket; unused by the ticker.
         sport:
           type: string
         tournament:
           type: string
         tournamentLabel:
           type: string
-          description: Short code top-right; falls back to tournament.
+          description: Short code top-right; falls back to tournament. Currently omitted for cricket (clients render the fallback).
         status:
           type: string
           enum:
@@ -7677,7 +7686,9 @@ components:
           type: boolean
     CricketMatchDetail:
       type: object
-      description: Full scorecard page. startTime/matchDate/lastUpdated and innings[].from/to are pre-formatted display strings rendered verbatim. videoEmbedUrl must be empty or a youtube.com / player.vimeo.com URL.
+      description: |-
+        Full scorecard page. startTime/matchDate/lastUpdated and innings[].from/to are pre-formatted display strings rendered verbatim. videoEmbedUrl must be empty or a youtube.com / player.vimeo.com URL.
+        Provenance: every populated field is either an admin-entered raw fact or derived from one by the server — nothing displayed is invented. Fields with no admin input today (stage, city, rightsHolder, totalViews, liveViewers, lastUpdatedBy, the innings timing blocks) are omitted or emitted empty; clients must guard/fall back, and may not synthesize values for them.
       required:
         - slug
       properties:
@@ -7687,6 +7698,7 @@ components:
           type: string
         seriesName:
           type: string
+          description: Currently the tournament slug (no separate series label exists).
         status:
           type: string
           enum:
@@ -7695,10 +7707,12 @@ components:
             - Upcoming
         stage:
           type: string
+          description: Not admin-enterable; currently omitted.
         venue:
           type: string
         city:
           type: string
+          description: Not admin-enterable; currently omitted.
         location:
           type: string
           description: Display string.
@@ -7746,17 +7760,22 @@ components:
             $ref: '#/components/schemas/MvpPlayer'
         videoEmbedUrl:
           type: string
-          description: Empty string when no video; else youtube/vimeo host only.
+          description: Empty string when no video; else youtube/vimeo host only. No admin input today, so always empty.
         streamTitle:
           type: string
+          description: Synthesized "{home} Vs {away}" label.
         rightsHolder:
           type: string
+          description: Not admin-enterable; currently omitted.
         totalViews:
           type: integer
+          description: No view tracking for matches yet; currently omitted.
         liveViewers:
           type: integer
+          description: No view tracking for matches yet; currently omitted.
         innings:
           type: array
+          description: Session timing blocks; not admin-enterable, emitted empty.
           items:
             $ref: '#/components/schemas/CricketInningsTiming'
         lastUpdated:
@@ -7764,6 +7783,7 @@ components:
           description: Display string.
         lastUpdatedBy:
           type: string
+          description: Not admin-enterable; currently omitted.
         available:
           $ref: '#/components/schemas/CricketAvailableTabs'
     RugbyScoreboardScorer:
