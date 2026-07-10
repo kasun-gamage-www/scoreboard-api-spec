@@ -2544,7 +2544,7 @@ paths:
       security:
         - firebaseAuth: []
       summary: Import a match's cricket data from CSV / Excel (single template)
-      description: 'Admin-only. One template covers finished and ongoing matches at all three detail levels. Fixed header: `rowType,key,value,innings,battingTeam,over, ball,striker,nonStriker,bowler,runsOffBat,extraType,extraRuns,wicketType, playerOut,fielder,runs,wickets,overs`. Row kinds: META (key/value pairs — format, status, tossWonBy, tossDecision, batFirst, playerOfMatch, resultNote), PLAYER (adds lineup players missing from the match), INNINGS (one per innings, declares order; totals required only when the innings has no OVER/BALL rows), OVER (per-over totals) and BALL (one delivery; file order wins over the over/ball columns — the server re-numbers). Detail level is inferred per innings: BALL rows ⇒ BALL, else OVER rows ⇒ OVER, else MATCH from the INNINGS totals. `META status=LIVE` marks an ongoing match — unclosed innings stay IN_PROGRESS and the crease state is seeded from the last BALL row, so the admin ball pad resumes exactly where the file left off. The parsed result funnels through the same pipeline as `PUT …/cricket-data` (validation, derivation, mirroring, cache busting). Row errors follow the schedule importer''s contract; 422 when nothing imports. The file is capped at 10 MB (413 beyond that).'
+      description: 'Admin-only. One template covers finished and ongoing matches at all three detail levels. Fixed header: `rowType,key,value,innings,battingTeam,over, ball,striker,nonStriker,bowler,runsOffBat,extraType,extraRuns,wicketType, playerOut,fielder,runs,wickets,overs`. Row kinds: META (key/value pairs — format, status, tossWonBy, tossDecision, batFirst, playerOfMatch, resultNote, oversLimit for rain-shortened quotas), PLAYER (adds lineup players missing from the match), INNINGS (one per innings, declares order; totals required only when the innings has no OVER/BALL rows; the value column may carry an explicit state — COMPLETED/DECLARED/IN_PROGRESS — e.g. for TEST declarations), OVER (per-over totals) and BALL (one delivery; file order wins over the over/ball columns — the server re-numbers). Detail level is inferred per innings: BALL rows ⇒ BALL, else OVER rows ⇒ OVER, else MATCH from the INNINGS totals. `META status=LIVE` marks an ongoing match — the last innings stays IN_PROGRESS and the crease state is seeded from the last BALL row (strike rotation applied), so the admin ball pad resumes exactly where the file left off. The parsed result funnels through the same pipeline as `PUT …/cricket-data` (validation, derivation, mirroring, cache busting). Row errors follow the schedule importer''s contract; a failed innings also drops all later innings (seq stays contiguous); 422 when nothing imports — a fully-failed file never replaces an existing document. The file is capped at 10 MB (413 beyond that).'
       requestBody:
         required: true
         content:
@@ -6725,6 +6725,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ScheduleRowError'
+        warnings:
+          type: array
+          description: Non-blocking validation feedback, same as the cricket-data PUT — e.g. OVER-level bowler names that don't resolve against the stored lineups. Present only when non-empty.
+          items:
+            type: string
     PollOption:
       type: object
       required:

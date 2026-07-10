@@ -22,3 +22,11 @@ properties:
     type: array
     items:
       $ref: ./ScheduleRowError.yaml
+  warnings:
+    type: array
+    description: >-
+      Non-blocking validation feedback, same as the cricket-data PUT — e.g.
+      OVER-level bowler names that don't resolve against the stored lineups.
+      Present only when non-empty.
+    items:
+      type: string

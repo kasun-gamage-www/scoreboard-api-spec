@@ -13,18 +13,23 @@ post:
     ball,striker,nonStriker,bowler,runsOffBat,extraType,extraRuns,wicketType,
     playerOut,fielder,runs,wickets,overs`. Row kinds: META (key/value pairs —
     format, status, tossWonBy, tossDecision, batFirst, playerOfMatch,
-    resultNote), PLAYER (adds lineup players missing from the match), INNINGS
-    (one per innings, declares order; totals required only when the innings has
-    no OVER/BALL rows), OVER (per-over totals) and BALL (one delivery; file
-    order wins over the over/ball columns — the server re-numbers). Detail
-    level is inferred per innings: BALL rows ⇒ BALL, else OVER rows ⇒ OVER,
-    else MATCH from the INNINGS totals. `META status=LIVE` marks an ongoing
-    match — unclosed innings stay IN_PROGRESS and the crease state is seeded
-    from the last BALL row, so the admin ball pad resumes exactly where the
-    file left off. The parsed result funnels through the same pipeline as
-    `PUT …/cricket-data` (validation, derivation, mirroring, cache busting).
-    Row errors follow the schedule importer's contract; 422 when nothing
-    imports. The file is capped at 10 MB (413 beyond that).
+    resultNote, oversLimit for rain-shortened quotas), PLAYER (adds lineup
+    players missing from the match), INNINGS (one per innings, declares order;
+    totals required only when the innings has no OVER/BALL rows; the value
+    column may carry an explicit state — COMPLETED/DECLARED/IN_PROGRESS —
+    e.g. for TEST declarations), OVER (per-over totals) and BALL (one
+    delivery; file order wins over the over/ball columns — the server
+    re-numbers). Detail level is inferred per innings: BALL rows ⇒ BALL, else
+    OVER rows ⇒ OVER, else MATCH from the INNINGS totals. `META status=LIVE`
+    marks an ongoing match — the last innings stays IN_PROGRESS and the
+    crease state is seeded from the last BALL row (strike rotation applied),
+    so the admin ball pad resumes exactly where the file left off. The parsed
+    result funnels through the same pipeline as `PUT …/cricket-data`
+    (validation, derivation, mirroring, cache busting). Row errors follow the
+    schedule importer's contract; a failed innings also drops all later
+    innings (seq stays contiguous); 422 when nothing imports — a fully-failed
+    file never replaces an existing document. The file is capped at 10 MB
+    (413 beyond that).
   requestBody:
     required: true
     content:
