@@ -2933,7 +2933,7 @@ paths:
         - Cricket Display
       operationId: cricketLive
       summary: Lightweight live cricket score (poll/SSE)
-      description: 'Always sets `Cache-Control: no-store`. Served write-through from an in-memory map updated on every admin write — steady-state reads never touch the database (a cold/post-restart miss reads the persisted snapshot once). Clients poll every 5 s while the match is LIVE. The snapshot is evicted ~5 min after the match completes, after which the endpoint returns 404 — pollers treat that as the end of live coverage.'
+      description: 'Always sets `Cache-Control: no-store`. Served write-through from an in-memory map updated on every admin write — steady-state reads never touch the database (a cold/post-restart miss reads the persisted snapshot once). Clients poll every 5 s while the match is LIVE. The snapshot is evicted ~5 min after the match completes, after which the endpoint returns 404 — pollers treat that as the end of live coverage. Each poll also counts the client toward the detail endpoint''s `liveViewers` gauge (distinct clients seen within a ~30 s window).'
       responses:
         '200':
           description: Live cricket score.
@@ -2947,6 +2947,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /match/cricket/{slug}/view:
+    parameters:
+      - $ref: '#/components/parameters/Slug'
+    post:
+      tags:
+        - Cricket Display
+      operationId: cricketMatchRecordView
+      summary: Record a view (visit) of a cricket match page
+      description: Fire-and-forget view beacon, the match twin of `/articles/{slug}/view`. Clients fire it (e.g. via `sendBeacon`) after roughly 10 seconds of dwell on the match page, so a recorded view means "watched", not "landed". Views are deduplicated per client per match over a ~30 minute window, buffered in the server, and persisted in batches; they feed the match's all-time `totalViews` on the detail endpoint. The response is always `204` with no body — counted, deduplicated, unknown slug or non-cricket slug are indistinguishable — so clients must never retry and cannot probe dedup state. No request body.
+      responses:
+        '204':
+          description: 'Accepted. Sent unconditionally (also for deduplicated, dropped or unknown-slug beacons); marked `Cache-Control: no-store`.'
   /match/list-rugby:
     get:
       tags:
@@ -7688,7 +7700,7 @@ components:
       type: object
       description: |-
         Full scorecard page. startTime/matchDate/lastUpdated and innings[].from/to are pre-formatted display strings rendered verbatim. videoEmbedUrl must be empty or a youtube.com / player.vimeo.com URL.
-        Provenance: every populated field is either an admin-entered raw fact or derived from one by the server — nothing displayed is invented. Fields with no admin input today (stage, city, rightsHolder, totalViews, liveViewers, lastUpdatedBy, the innings timing blocks) are omitted or emitted empty; clients must guard/fall back, and may not synthesize values for them.
+        Provenance: every populated field is either an admin-entered raw fact, derived from one by the server, or (totalViews/liveViewers only) measured from real reader traffic — nothing displayed is invented. Fields with no input today (stage, city, rightsHolder, lastUpdatedBy, the innings timing blocks) are omitted or emitted empty; clients must guard/fall back, and may not synthesize values for them.
       required:
         - slug
       properties:
@@ -7769,10 +7781,10 @@ components:
           description: Not admin-enterable; currently omitted.
         totalViews:
           type: integer
-          description: No view tracking for matches yet; currently omitted.
+          description: All-time deduplicated views of this match page, counted from the `/match/cricket/{slug}/view` beacon (fired after ~10 s of dwell). Stamped onto the response at send time, so it may trail reality by up to the flush window (~1 min) plus the detail cache TTL.
         liveViewers:
           type: integer
-          description: No view tracking for matches yet; currently omitted.
+          description: Clients currently polling `/match/cricket/{slug}/live` (distinct clients seen within the last ~30 s). Naturally 0 when the match is not LIVE. Stamped at send time; not persisted.
         innings:
           type: array
           description: Session timing blocks; not admin-enterable, emitted empty.

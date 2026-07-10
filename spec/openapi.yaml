@@ -344,6 +344,8 @@ paths:
     $ref: paths/match_cricket_{slug}.yaml
   /match/cricket/{slug}/live:
     $ref: paths/match_cricket_{slug}_live.yaml
+  /match/cricket/{slug}/view:
+    $ref: paths/match_cricket_{slug}_view.yaml
   /match/list-rugby:
     $ref: paths/match_list-rugby.yaml
   /match/rugby/past-featured:

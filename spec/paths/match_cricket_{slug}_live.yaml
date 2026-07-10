@@ -11,7 +11,9 @@ get:
     the database (a cold/post-restart miss reads the persisted snapshot once).
     Clients poll every 5 s while the match is LIVE. The snapshot is evicted
     ~5 min after the match completes, after which the endpoint returns 404 —
-    pollers treat that as the end of live coverage.
+    pollers treat that as the end of live coverage. Each poll also counts the
+    client toward the detail endpoint's `liveViewers` gauge (distinct clients
+    seen within a ~30 s window).
   responses:
     '200':
       description: Live cricket score.

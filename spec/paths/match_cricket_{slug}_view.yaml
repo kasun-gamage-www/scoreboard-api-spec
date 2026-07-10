@@ -1,0 +1,22 @@
+parameters:
+  - $ref: ../components/parameters/Slug.yaml
+post:
+  tags:
+    - Cricket Display
+  operationId: cricketMatchRecordView
+  summary: Record a view (visit) of a cricket match page
+  description: >-
+    Fire-and-forget view beacon, the match twin of `/articles/{slug}/view`.
+    Clients fire it (e.g. via `sendBeacon`) after roughly 10 seconds of dwell
+    on the match page, so a recorded view means "watched", not "landed". Views
+    are deduplicated per client per match over a ~30 minute window, buffered in
+    the server, and persisted in batches; they feed the match's all-time
+    `totalViews` on the detail endpoint. The response is always `204` with no
+    body — counted, deduplicated, unknown slug or non-cricket slug are
+    indistinguishable — so clients must never retry and cannot probe dedup
+    state. No request body.
+  responses:
+    '204':
+      description: >-
+        Accepted. Sent unconditionally (also for deduplicated, dropped or
+        unknown-slug beacons); marked `Cache-Control: no-store`.
